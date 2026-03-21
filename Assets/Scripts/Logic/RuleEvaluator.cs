@@ -14,6 +14,9 @@ namespace FlipLogic.Logic
     {
         public static RuleEvaluator Instance { get; private set; }
 
+        /// <summary>デバッグ・エディタでの評価結果動的ログ収集用</summary>
+        public static IRuleEventLogger GlobalLogger { get; set; }
+
         /// <summary>評価対象のルールリスト。RulebookManagerから供給される。</summary>
         private readonly List<RuleData> _activeRules = new List<RuleData>();
 
@@ -129,6 +132,22 @@ namespace FlipLogic.Logic
                             _lastResults.Add(result);
                             OnRuleApplied?.Invoke(result);
                         }
+                    }
+
+                    if (GlobalLogger != null)
+                    {
+                        GlobalLogger.LogEvent(new RuleEvalEvent
+                        {
+                            Timestamp = System.DateTime.Now,
+                            TurnNumber = Core.TurnManager.Instance != null ? Core.TurnManager.Instance.CurrentTurn : 0,
+                            PhaseName = Core.TurnManager.Instance != null ? Core.TurnManager.Instance.CurrentPhase.ToString() : "Unknown",
+                            RuleId = rule.RuleId,
+                            RuleName = rule.RuleName,
+                            ConditionMet = conditionMet,
+                            TargetEntityInfo = $"{entity.Type}({entity.gameObject.GetInstanceID()})",
+                            ConditionData = condition,
+                            AppliedEffectData = conditionMet ? effect : null
+                        });
                     }
                 }
             }

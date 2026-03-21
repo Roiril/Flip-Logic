@@ -74,11 +74,25 @@
 
 ## 優先度 (P3) デザイナー用拡張パネルツール
 
-### Issue 7: フリップロジック・デザイナーパネル (EditorWindow)
+### [DONE] Issue 7: フリップロジック・デザイナーパネル (EditorWindow)
+- **状態**: 完了 (2026-03-22)
 - **目的**: ゲームデザイナーがコードを書かずに全コンテンツをテスト・構築できる環境の提供。
 - **タスク**:
-  - **Tag Registry Panel**: タグマスタとビジュアル定義の編集。
-  - **Rule Editor Panel**: `RuleDataAsset` のGUI構築、P/Q条件設定、倫理状態(LogicState)のプレビュー。
-  - **Enemy Editor Panel**: `EnemyData` のステータスと初期タグ設定。
-  - **Stage Editor Panel**: `StageData` 用の設定。マップエディタ、初期配置などの設定機能。
-  - **Play Test Panel**: ルール評価ログやステージの即時ロードボタンの提供。
+  - [x] **ウィンドウ骨格**: `EditorWindow` + タブ切り替え基盤（Tags, Rules, Enemies, Stages, Debug）。
+  - [x] **Tag Registry Panel**: `TagKeyRegistry` のタグ一覧・編集GUI。
+  - [x] **Rule Editor Panel**: `RuleAsset` のフォームベースGUI構築、P/Q条件設定、`TagKeyRegistry` 連動ドロップダウン、LogicState プレビュー。
+  - [x] **Enemy Editor Panel**: `EnemyData` のステータスと初期タグ設定。
+  - [x] **Stage Editor Panel**: `StageConfig` のメタ情報編集。
+  - [x] **Debug Panel（軽量版）**: Play中のエンティティ/タグ一覧表示、手動タグ操作、アクティブルール一覧。
+
+---
+
+## 優先度 (P4) デザイナー拡張ツール（高度機能）
+
+### [DONE] Issue 8: マップエディタ補助とデバッグログ機能 (2026-03-22)
+**目的:** Designer Panelを拡張し、実際にステージを作成・デバッグするための補助機能（マップ配置、ルール適用ログ閲覧、即時テスト開始）を実装する。
+**前提:** Issue 7のクリア。
+**タスク:**
+- [x] MapPlacementDataとMapEditorTabの実装（SceneView連携による敵・タグ配置）
+- [x] RuleEvaluatorからDebugTabへのリアルタイムログ送信機能（適用ルールの可視化）
+- [x] StageEditorTabへの即時ロード（Play）機能追加
