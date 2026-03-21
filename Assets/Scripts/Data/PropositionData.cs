@@ -3,6 +3,13 @@ using FlipLogic.Core;
 
 namespace FlipLogic.Data
 {
+    public enum RuleTarget
+    {
+        Entity,       // エンティティ自身
+        Tile,         // 特定のマス（現在は未使用だが将来用）
+        TileOfEntity  // エンティティが現在いるマス
+    }
+
     /// <summary>
     /// 命題の単位データ。肯定形/否定形テキストと現在の否定状態を保持する。
     /// </summary>
@@ -57,8 +64,12 @@ namespace FlipLogic.Data
         public PropositionData Result;    // Q
         public bool IsSwapped;           // PとQが入れ替わっているか
 
+        // --- Subject Filter ---
+        /// <summary>このルールが適用されるエンティティの条件（例：氷属性を持つ対象のみ）。</summary>
+        public TagCondition SubjectFilterP;
+
         // --- Tag Condition (P) ---
-        /// <summary>条件P: このタグを持つエンティティが評価対象。</summary>
+        /// <summary>条件P: このタグを持つ・マスの状態がこうであるか等を評価する。</summary>
         public TagCondition TagConditionP;
 
         // --- Tag Result (Q) ---
@@ -97,24 +108,27 @@ namespace FlipLogic.Data
             Result.Reset();
         }
 
-        /// <summary>現在の状態から論理状態を評価する。</summary>
-        public LogicState EvaluateState()
+        /// <summary>現在の論理状態を判定する。すべて独立して扱えるよう拡張。</summary>
+        public LogicState GetCurrentLogicState()
         {
             bool swapped = IsSwapped;
-            bool pNegated = Condition.IsNegated;
-            bool qNegated = Result.IsNegated;
+            bool pNeg = Condition.IsNegated;
+            bool qNeg = Result.IsNegated;
 
-            // 元の命題: P→Q (swap=false, pNeg=false, qNeg=false)
-            if (!swapped && !pNegated && !qNegated) return LogicState.Original;
-            // 逆: Q→P (swap=true, pNeg=false, qNeg=false)
-            if (swapped && !pNegated && !qNegated) return LogicState.Converse;
-            // 裏: ¬P→¬Q (swap=false, pNeg=true, qNeg=true)
-            if (!swapped && pNegated && qNegated) return LogicState.Inverse;
-            // 対偶: ¬Q→¬P (swap=true, pNeg=true, qNeg=true)
-            if (swapped && pNegated && qNegated) return LogicState.Contrapositive;
-
-            // それ以外は不完全な状態
-            return LogicState.Invalid;
+            if (!swapped)
+            {
+                if (!pNeg && !qNeg) return LogicState.Original;
+                if (pNeg && qNeg) return LogicState.Inverse;
+                if (pNeg) return LogicState.PNegatedOnly;
+                return LogicState.QNegatedOnly;
+            }
+            else
+            {
+                if (!pNeg && !qNeg) return LogicState.Converse;
+                if (pNeg && qNeg) return LogicState.Contrapositive;
+                if (pNeg) return LogicState.SwappedPNeg;
+                return LogicState.SwappedQNeg;
+            }
         }
 
         /// <summary>タグ効果をタグ条件に変換する（スワップ用）。</summary>
@@ -124,7 +138,8 @@ namespace FlipLogic.Data
             {
                 Key = effect.Key,
                 Value = effect.Value,
-                RequirePresence = (effect.Operation == TagOperation.Add)
+                RequirePresence = (effect.Operation == TagOperation.Add),
+                Target = effect.Target
             };
         }
 
@@ -135,33 +150,27 @@ namespace FlipLogic.Data
             {
                 Key = condition.Key,
                 Value = condition.Value,
-                Operation = condition.RequirePresence ? TagOperation.Add : TagOperation.Remove
+                Operation = condition.RequirePresence ? TagOperation.Add : TagOperation.Remove,
+                Target = condition.Target
             };
         }
     }
 
     /// <summary>
-    /// タグ条件。ルール評価時にエンティティが条件を満たすかを判定する。
+    /// タグ条件。特定のタグが存在しているかどうかを判定。
     /// </summary>
     [Serializable]
     public class TagCondition
     {
-        /// <summary>判定対象のタグKey。</summary>
+        public RuleTarget Target = RuleTarget.Entity;
         public string Key;
-        /// <summary>判定対象のタグValue（空=Keyのみで判定）。</summary>
         public string Value;
-        /// <summary>true: タグが存在する場合に真。false: タグが存在しない場合に真。</summary>
-        public bool RequirePresence = true;
+        public bool RequirePresence = true; // trueなら「存在する」、falseなら「存在しない」
 
-        /// <summary>否定状態を考慮した条件判定。</summary>
+        /// <summary>否定状態を考慮した評価。</summary>
         public bool Evaluate(TagContainer tags, bool isNegated)
         {
-            bool hasTag;
-            if (string.IsNullOrEmpty(Value))
-                hasTag = tags.HasKey(Key);
-            else
-                hasTag = tags.HasTag(Key, Value);
-
+            bool hasTag = tags.HasTag(Key, Value);
             bool baseResult = RequirePresence ? hasTag : !hasTag;
 
             // 否定時は結果を反転
@@ -170,15 +179,17 @@ namespace FlipLogic.Data
     }
 
     /// <summary>
-    /// タグ効果。ルール評価結果として対象エンティティに適用されるタグ操作。
+    /// タグ効果。ルール評価結果として対象に適用されるタグ操作。
     /// </summary>
     [Serializable]
     public class TagEffect
     {
+        public RuleTarget Target = RuleTarget.Entity;
         public string Key;
         public string Value;
         public TagOperation Operation;
         public int Duration;
+        public string BehaviorId = "";
 
         /// <summary>否定状態を考慮した効果適用。</summary>
         public void Apply(TagContainer tags, bool isNegated, string source = "")
@@ -194,7 +205,7 @@ namespace FlipLogic.Data
             switch (effectiveOp)
             {
                 case TagOperation.Add:
-                    tags.AddTag(new TagDefinition(Key, Value, Duration, source));
+                    tags.AddTag(new TagDefinition(Key, Value, Duration, source, BehaviorId));
                     break;
                 case TagOperation.Remove:
                     tags.RemoveTag(Key, Value);
@@ -213,10 +224,14 @@ namespace FlipLogic.Data
     /// <summary>論理状態の列挙。</summary>
     public enum LogicState
     {
-        Original,       // P→Q（元の命題）
-        Converse,       // Q→P（逆）
-        Inverse,        // ¬P→¬Q（裏）
-        Contrapositive, // ¬Q→¬P（対偶）
-        Invalid         // 不完全な操作状態
+        Original,       // P→Q
+        Converse,       // Q→P
+        Inverse,        // ¬P→¬Q
+        Contrapositive, // ¬Q→¬P
+        PNegatedOnly,   // ¬P→Q
+        QNegatedOnly,   // P→¬Q
+        SwappedPNeg,    // ¬Q→P
+        SwappedQNeg,    // Q→¬P
+        Invalid         // (旧)
     }
 }

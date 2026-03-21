@@ -70,13 +70,14 @@ namespace FlipLogic.Core
             {
                 RuleId = "rule_fire_ice",
                 RuleName = "炎と氷の法則",
-                Description = "火属性魔法は氷スライムを即死させる",
+                Description = "火のマスに乗った氷スライムは即死する。\n※論理を書き換えることでスライムとマスの因果関係が変化します。",
                 Chapter = 1,
                 IsActive = true,
-                Condition = new PropositionData("対象マスに火属性魔法が発生する", "対象マスに火属性魔法が発生しない"),
-                Result = new PropositionData("氷スライムは即死する", "氷スライムは即死しない"),
-                TagConditionP = new TagCondition { Key = "Element", Value = "Fire", RequirePresence = true },
-                TagResultQ = new TagEffect { Key = "Status", Value = "InstantDeath", Operation = TagOperation.Add, Duration = 1 },
+                Condition = new PropositionData("氷スライムが火のマスにいる", "氷スライムが火のマスにいない"),
+                Result = new PropositionData("氷スライムは死ぬ", "氷スライムは死なない"),
+                SubjectFilterP = new TagCondition { Target = RuleTarget.Entity, Key = "Element", Value = "Ice", RequirePresence = true },
+                TagConditionP = new TagCondition { Target = RuleTarget.TileOfEntity, Key = "Element", Value = "Fire", RequirePresence = true },
+                TagResultQ = new TagEffect { Target = RuleTarget.Entity, Key = "Status", Value = "InstantDeath", Operation = TagOperation.Add, Duration = 1, BehaviorId = "InstantDeath" },
             };
 
             var page1 = new RulePage

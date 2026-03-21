@@ -60,10 +60,17 @@ namespace FlipLogic.Tutorial
                     if (isWall && GridMap.Instance != null)
                     {
                         GridMap.Instance.AddCellTag(new Vector2Int(x, y),
-                            new TagDefinition("Terrain", "Wall", -1, "Map"));
+                            new TagDefinition("Terrain", "Wall", 0, "Map"));
                     }
                 }
             }
+
+            // GridMapの境界を実際のマップサイズに同期
+            if (GridMap.Instance != null)
+            {
+                GridMap.Instance.SetMapSize(new Vector2Int(_width, _height));
+            }
+
         }
 
         private int[,] CreateLayout()

@@ -61,50 +61,80 @@ namespace FlipLogic.Logic
         {
             _lastResults.Clear();
 
-            var entities = FindObjectsByType<Core.GameEntity>(FindObjectsSortMode.None);
+            var entities = UnityEngine.Object.FindObjectsByType<Core.GameEntity>(UnityEngine.FindObjectsSortMode.None);
             if (entities.Length == 0) return _lastResults;
 
             foreach (var rule in _activeRules)
             {
                 if (!rule.IsActive) continue;
 
-                var logicState = rule.EvaluateState();
-                if (logicState == LogicState.Invalid) continue;
+                var logicState = rule.GetCurrentLogicState();
 
                 // 現在の条件と結果を取得（スワップ反映済み）
                 var condition = rule.CurrentTagCondition;
                 var effect = rule.CurrentTagResult;
                 if (condition == null || effect == null) continue;
 
-                // 否定状態の判定
                 bool conditionNegated = IsConditionNegated(rule);
                 bool resultNegated = IsResultNegated(rule);
 
                 foreach (var entity in entities)
                 {
-                    // 条件Pを評価
-                    if (condition.Evaluate(entity.Tags, conditionNegated))
+                    // 主語フィルタ（SubjectFilterP）がある場合、それに合致しないエンティティは無視する
+                    if (rule.SubjectFilterP != null)
                     {
-                        // 結果Qを強制適用
-                        effect.Apply(entity.Tags, resultNegated, $"Rule:{rule.RuleId}");
-
-                        var result = new EvaluationResult
+                        Core.TagContainer subjectTags = GetTargetTags(entity, rule.SubjectFilterP.Target);
+                        if (subjectTags == null || !rule.SubjectFilterP.Evaluate(subjectTags, false))
                         {
-                            Rule = rule,
-                            TargetEntity = entity,
-                            LogicState = logicState,
-                            AppliedEffect = effect
-                        };
-                        _lastResults.Add(result);
-                        OnRuleApplied?.Invoke(result);
+                            continue;
+                        }
+                    }
 
-                        Debug.Log($"[RuleEvaluator] {rule.RuleName}({LogicEvaluator.GetStateDisplayText(rule)}) → {entity.EntityName} に適用: [{effect.Key}:{effect.Value}]");
+                    // 条件Pを評価するためのコンテナを選択
+                    Core.TagContainer conditionTags = GetTargetTags(entity, condition.Target);
+                    if (conditionTags == null) continue;
+
+                    bool conditionMet = condition.Evaluate(conditionTags, conditionNegated);
+
+                    // ハック: 「死ぬ (Status:InstantDeath)」条件は、物理的なHP0（死亡状態）でも満たすとする
+                    if (!conditionMet && condition.Key == "Status" && condition.Value == "InstantDeath")
+                    {
+                        bool isDead = !entity.IsAlive;
+                        bool baseResult = condition.RequirePresence ? isDead : !isDead;
+                        conditionMet = conditionNegated ? !baseResult : baseResult;
+                    }
+
+                    if (conditionMet)
+                    {
+                        // 結果Qを適用するためのコンテナを選択
+                        Core.TagContainer effectTags = GetTargetTags(entity, effect.Target);
+                        if (effectTags != null)
+                        {
+                            effect.Apply(effectTags, resultNegated, $"Rule:{rule.RuleId}");
+
+                            // マスの属性が変化した場合、UI（オーバーレイ）を更新する
+                            if (effect.Target == RuleTarget.TileOfEntity && Grid.TileOverlayRenderer.Instance != null)
+                            {
+                                Grid.TileOverlayRenderer.Instance.UpdateOverlay(entity.GridPosition);
+                            }
+
+                            var result = new EvaluationResult
+                            {
+                                Rule = rule,
+                                TargetEntity = entity,
+                                LogicState = logicState,
+                                AppliedEffect = effect
+                            };
+                            _lastResults.Add(result);
+                            OnRuleApplied?.Invoke(result);
+                        }
                     }
                 }
             }
 
             return _lastResults;
         }
+
 
         /// <summary>条件側が否定されているかを判定する。</summary>
         private bool IsConditionNegated(RuleData rule)
@@ -119,7 +149,22 @@ namespace FlipLogic.Logic
             // スワップ時はCondition側の否定状態が結果に適用される
             return rule.IsSwapped ? rule.Condition.IsNegated : rule.Result.IsNegated;
         }
-    }
+    
+
+
+        private Core.TagContainer GetTargetTags(Core.GameEntity entity, RuleTarget target)
+        {
+            switch (target)
+            {
+                case RuleTarget.Entity:
+                    return entity.Tags;
+                case RuleTarget.TileOfEntity:
+                    return Grid.GridMap.Instance != null ? Grid.GridMap.Instance.GetCellTags(entity.GridPosition) : null;
+                default:
+                    return null;
+            }
+        }
+}
 
     /// <summary>
     /// ルール評価の結果記録。演出やデバッグに使用する。

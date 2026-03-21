@@ -56,6 +56,9 @@ namespace FlipLogic.Explore
             // バトル中は移動不可
             if (Battle.BattleManager.Instance != null && Battle.BattleManager.Instance.IsInBattle) return;
 
+            // シナリオによる移動ブロック
+            if (Scenario.ScenarioRunner.Instance != null && Scenario.ScenarioRunner.Instance.IsMovementBlocked) return;
+
             // ターン待ち状態でなければ入力を受け付けない
             if (TurnManager.Instance == null) return;
             if (TurnManager.Instance.CurrentPhase != TurnPhase.WaitingForInput) return;

@@ -5,12 +5,14 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using FlipLogic.Core;
 using FlipLogic.Data;
+using FlipLogic.Scenario;
+using FlipLogic.Grid;
 
 namespace FlipLogic.Tutorial
 {
     /// <summary>
-    /// チュートリアルデモのセットアップと進行管理。
-    /// ゲーム開始時にUIを動的生成し、チュートリアルメッセージを表示する。
+    /// チュートリアルのセットアップとシナリオ定義。
+    /// ScenarioRunnerにステップを渡してイベント駆動で進行する。
     /// </summary>
     public class TutorialSetup : MonoBehaviour
     {
@@ -24,20 +26,11 @@ namespace FlipLogic.Tutorial
         private Canvas _canvas;
         private GameObject _tutorialPanel;
         private Text _tutorialText;
-        private int _tutorialStep;
-
-        private readonly List<string> _messages = new List<string>
-        {
-            "『世界論理改変RPG: Flip Logic』\nチュートリアルへようこそ。",
-            "矢印キー（またはWASD）で移動できます。\n1マス歩くたびに「1ターン」が進みます。",
-            "近くにいる氷スライムに近づいてみましょう。\n隣接するとバトルが始まります。",
-            "バトルでは「たたかう」で攻撃できますが…\n氷スライムは防御力が高い敵です。",
-            "「ルールブック」を開いてみましょう。\nこの世界のルールを「書き換える」ことで、\n戦況を有利に変化させられます！",
-        };
 
         private void Start()
         {
             SetupEntityVisuals();
+            SetupTileOverlays();
 
             if (_showTutorial)
                 StartCoroutine(BeginTutorial());
@@ -45,62 +38,144 @@ namespace FlipLogic.Tutorial
 
         private void SetupEntityVisuals()
         {
-            SetupSprite(_playerEntity, new Color(0.2f, 0.6f, 1.0f), 0.8f);
-            SetupSprite(_enemyEntity, new Color(0.5f, 0.9f, 1.0f), 0.7f);
+            // プレイヤー: 青丸＋白P
+            if (_playerEntity != null)
+            {
+                var sr = _playerEntity.GetComponent<SpriteRenderer>();
+                if (sr != null)
+                {
+                    sr.sprite = EntitySpriteFactory.CreateCircleWithLetter('P', new Color(0.2f, 0.55f, 1.0f), Color.white);
+                    sr.sortingOrder = 5;
+                    _playerEntity.transform.localScale = new Vector3(0.8f, 0.8f, 1f);
+                }
+            }
 
+            // 敵: 水色丸＋白E（初期位置は火マスの2マス下）
             if (_enemyEntity != null)
-                _enemyEntity.Tags.AddTag(new TagDefinition("Element", "Ice", -1, "Nature"));
+            {
+                var sr = _enemyEntity.GetComponent<SpriteRenderer>();
+                if (sr != null)
+                {
+                    sr.sprite = EntitySpriteFactory.CreateCircleWithLetter('E', new Color(0.5f, 0.9f, 1.0f), Color.white);
+                    sr.sortingOrder = 5;
+                    _enemyEntity.transform.localScale = new Vector3(0.7f, 0.7f, 1f);
+                }
+
+                // 氷属性スライムとして設定
+                _enemyEntity.Tags.AddTag(new TagDefinition("Element", "Ice", 0, "Nature"));
+                _enemyEntity.EntityName = "IceSlime";
+
+                var sym = _enemyEntity.GetComponent<Explore.EnemySymbol>();
+                if (sym != null) sym.AIType = Explore.EnemyAIType.Stationary;
+            }
+
+            // 火属性マスを設置（スライム巡回経路上）
+            if (GridMap.Instance != null)
+            {
+                GridMap.Instance.AddCellTag(new Vector2Int(5, 5), new TagDefinition("Element", "Fire", 0, "Tutorial"));
+            }
+
+            // TagBehaviorRunnerがない場合は生成
+            if (TagBehaviorRunner.Instance == null)
+            {
+                new GameObject("TagBehaviorRunner").AddComponent<TagBehaviorRunner>();
+            }
         }
 
-        private void SetupSprite(GameEntity entity, Color color, float scale)
+        private void SetupTileOverlays()
         {
-            if (entity == null) return;
-            var sr = entity.GetComponent<SpriteRenderer>();
-            if (sr == null) return;
-            if (sr.sprite == null)
+            // TileOverlayRendererがない場合は生成
+            if (TileOverlayRenderer.Instance == null)
             {
-                sr.sprite = MakeWhiteSprite();
-                sr.color = color;
-                sr.sortingOrder = 5;
-                entity.transform.localScale = new Vector3(scale, scale, 1f);
+                new GameObject("TileOverlayRenderer").AddComponent<TileOverlayRenderer>();
             }
+
+            // 少し遅延して全オーバーレイを構築（GridMap初期化待ち）
+            StartCoroutine(DelayedOverlayBuild());
+        }
+
+        private IEnumerator DelayedOverlayBuild()
+        {
+            yield return null;
+            yield return null;
+            if (TileOverlayRenderer.Instance != null)
+                TileOverlayRenderer.Instance.RebuildAll();
         }
 
         private IEnumerator BeginTutorial()
         {
             yield return null;
-            _tutorialStep = 0;
+            yield return null; // GridMapやTileOverlay初期化待ち
+
             EnsureCanvas();
             BuildTutorialPanel();
-            ShowStep(0);
-        }
 
-        private void ShowStep(int idx)
-        {
-            if (idx >= _messages.Count)
+            // ScenarioRunnerがなければ生成
+            if (ScenarioRunner.Instance == null)
             {
-                _tutorialPanel.SetActive(false);
-                return;
+                var go = new GameObject("ScenarioRunner");
+                go.AddComponent<ScenarioRunner>();
             }
-            _tutorialPanel.SetActive(true);
-            _tutorialText.text = _messages[idx];
+
+            // UI紐付け
+            yield return null;
+            var runner = ScenarioRunner.Instance;
+            // リフレクションを避け、直接フィールドを設定する代わりにSerializeFieldを公開
+            // → ScenarioRunnerのフィールドにUI要素を設定する必要がある
+            // ここではworkaroundとしてSetUIメソッドを追加済みと想定
+            SetScenarioRunnerUI(runner);
+
+            // シナリオ定義
+            var steps = BuildTutorialScenario();
+            runner.StartScenario(steps);
         }
 
-        private void NextStep()
+        private void SetScenarioRunnerUI(ScenarioRunner runner)
         {
-            _tutorialStep++;
-            ShowStep(_tutorialStep);
+            // ScenarioRunnerのSerializeFieldにはエディタからアクセスできないので、
+            // RuntimeでUIを差し込むための公開メソッドを想定
+            // → ScenarioRunnerにSetUI()を追加する必要がある
+            // 一旦はリフレクションで対応
+            var panelField = typeof(ScenarioRunner).GetField("_messagePanel",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var textField = typeof(ScenarioRunner).GetField("_messageText",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            if (panelField != null) panelField.SetValue(runner, _tutorialPanel);
+            if (textField != null) textField.SetValue(runner, _tutorialText);
         }
 
-        private void Update()
+        private List<ScenarioStep> BuildTutorialScenario()
         {
-            if (_tutorialPanel != null && _tutorialPanel.activeSelf)
+            return new List<ScenarioStep>
             {
-                if (Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
-                {
-                    NextStep();
-                }
-            }
+                // 1. ようこそ
+                new ScenarioStep { StepId = "welcome", Trigger = ScenarioTrigger.Immediate, WaitClickAfterAction = true, Action = ScenarioAction.ShowMessage, ActionParam = "チュートリアルへようこそ" },
+                // 2. スライム紹介
+                new ScenarioStep { StepId = "intro_slime", Trigger = ScenarioTrigger.Immediate, WaitClickAfterAction = true, Action = ScenarioAction.ShowMessage, ActionParam = "近くに一匹の氷スライムがいます" },
+                // 3. スライム強制移動
+                new ScenarioStep { StepId = "move_slime", Trigger = ScenarioTrigger.Immediate, Action = ScenarioAction.ForceMoveEntity, ActionParam = "IceSlime;5,5" },
+                // 4. 乗ったことの通知
+                new ScenarioStep { StepId = "slime_on_fire", Trigger = ScenarioTrigger.Immediate, WaitClickAfterAction = true, Action = ScenarioAction.ShowMessage, ActionParam = "氷スライムが火のマスに乗ってしまいました" },
+                // 5. 即死予告
+                new ScenarioStep { StepId = "death_warning", Trigger = ScenarioTrigger.Immediate, WaitClickAfterAction = true, Action = ScenarioAction.ShowMessage, ActionParam = "氷スライムは火に弱いので\n即死してしまいます" },
+                // 6. メッセージ非表示
+                new ScenarioStep { StepId = "hide_warning", Trigger = ScenarioTrigger.Immediate, Action = ScenarioAction.HideMessage },
+                // 7. 移動許可
+                new ScenarioStep { StepId = "allow_move", Trigger = ScenarioTrigger.Immediate, Action = ScenarioAction.AllowMovement },
+                // 8. スライム死亡を検知
+                new ScenarioStep { StepId = "slime_died", Trigger = ScenarioTrigger.EntityDied, TriggerParam = "IceSlime", WaitClickAfterAction = true, Action = ScenarioAction.ShowMessage, ActionParam = "、、、" },
+                // 9. 新スライム出現
+                new ScenarioStep { StepId = "new_slime", Trigger = ScenarioTrigger.Immediate, Action = ScenarioAction.SpawnEnemy, ActionParam = "7,2", ActionParam2 = "IceSlime2" },
+                // 10. 新スライムメッセージ
+                new ScenarioStep { StepId = "new_slime_msg", Trigger = ScenarioTrigger.Immediate, WaitClickAfterAction = true, Action = ScenarioAction.ShowMessage, ActionParam = "また一匹新しい氷スライムが出てきました" },
+                // 11. 戦闘促進
+                new ScenarioStep { StepId = "go_fight", Trigger = ScenarioTrigger.Immediate, WaitClickAfterAction = true, Action = ScenarioAction.ShowMessage, ActionParam = "近づいて戦ってみましょう" },
+                // 12. ルール操作の説明
+                new ScenarioStep { StepId = "rule_power", Trigger = ScenarioTrigger.Immediate, WaitClickAfterAction = true, Action = ScenarioAction.ShowMessage, ActionParam = "おっと言い忘れてました。\nあなたにはルールを操るという\n特別な力を与えておきましたよ" },
+                // 13. シナリオ終了
+                new ScenarioStep { StepId = "end", Trigger = ScenarioTrigger.Immediate, Action = ScenarioAction.EndScenario },
+            };
         }
 
         private void EnsureCanvas()
@@ -117,7 +192,6 @@ namespace FlipLogic.Tutorial
             scaler.referenceResolution = new Vector2(960, 540);
             go.AddComponent<GraphicRaycaster>();
 
-            // EventSystemがなければ追加
             if (FindAnyObjectByType<EventSystem>() == null)
             {
                 var es = new GameObject("EventSystem");
@@ -155,8 +229,6 @@ namespace FlipLogic.Tutorial
             tRect.offsetMin = Vector2.zero;
             tRect.offsetMax = Vector2.zero;
 
-            // タップ領域（パネル全体）はUpdateで判定するため削除
-
             // ▼マーク
             var arrowGo = new GameObject("Arrow");
             arrowGo.transform.SetParent(_tutorialPanel.transform, false);
@@ -171,17 +243,8 @@ namespace FlipLogic.Tutorial
             aRect.anchorMax = new Vector2(0.98f, 0.15f);
             aRect.offsetMin = Vector2.zero;
             aRect.offsetMax = Vector2.zero;
-        }
 
-        private static Sprite MakeWhiteSprite()
-        {
-            var tex = new Texture2D(4, 4);
-            var px = new Color[16];
-            for (int i = 0; i < px.Length; i++) px[i] = Color.white;
-            tex.SetPixels(px);
-            tex.Apply();
-            tex.filterMode = FilterMode.Point;
-            return Sprite.Create(tex, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f), 4f);
+            _tutorialPanel.SetActive(false);
         }
     }
 }

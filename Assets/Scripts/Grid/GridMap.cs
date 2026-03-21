@@ -39,6 +39,12 @@ namespace FlipLogic.Grid
             Instance = this;
         }
 
+        /// <summary>マップサイズを外部から設定する（プロシージャル生成時用）。</summary>
+        public void SetMapSize(Vector2Int size)
+        {
+            _mapSize = size;
+        }
+
         /// <summary>指定セルが通行可能か。</summary>
         public bool IsWalkable(Vector2Int pos)
         {
@@ -147,5 +153,13 @@ namespace FlipLogic.Grid
                 }
             }
         }
-    }
+    
+
+
+        /// <summary>指定セルのタグを除去する。</summary>
+        public void RemoveCellTag(Vector2Int pos, string key, string value)
+        {
+            GetCellTags(pos).RemoveTag(key, value);
+        }
+}
 }

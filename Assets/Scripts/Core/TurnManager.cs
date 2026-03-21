@@ -58,16 +58,11 @@ namespace FlipLogic.Core
             CurrentPhase = TurnPhase.PlayerAction;
             OnTurnStart?.Invoke(_currentTurn);
 
-            Debug.Log($"[TurnManager] ターン {_currentTurn} 開始");
-
-            // プレイヤーアクション完了通知
             OnPlayerActionComplete?.Invoke();
 
-            // 敵行動フェーズ
             CurrentPhase = TurnPhase.EnemyAction;
             OnEnemyPhase?.Invoke();
 
-            // Rule Evaluatorによる全ルール一斉評価
             CurrentPhase = TurnPhase.RuleEvaluation;
             List<Logic.EvaluationResult> results = null;
             if (Logic.RuleEvaluator.Instance != null)
@@ -76,23 +71,29 @@ namespace FlipLogic.Core
             }
             OnRuleEvaluationComplete?.Invoke(results);
 
-            // 全エンティティのタグ期限処理
-            CurrentPhase = TurnPhase.TagTick;
-            var entities = FindObjectsByType<GameEntity>(FindObjectsSortMode.None);
-            foreach (var entity in entities)
+            // 絶対法則（タグの振る舞い）の実行
+            if (TagBehaviorRunner.Instance != null)
             {
-                var expired = entity.Tags.TickDurations();
-                foreach (var tag in expired)
-                {
-                    Debug.Log($"[TurnManager] {entity.EntityName} のタグ {tag} が期限切れ");
-                }
+                TagBehaviorRunner.Instance.ExecuteTurnEndBehaviors();
             }
 
-            // ターン完了
+            CurrentPhase = TurnPhase.TagTick;
+            var entities = UnityEngine.Object.FindObjectsByType<GameEntity>(UnityEngine.FindObjectsSortMode.None);
+            foreach (var entity in entities)
+            {
+                entity.Tags.TickDurations();
+            }
+
+            // マスのタグ期限処理
+            if (Grid.GridMap.Instance != null)
+            {
+                Grid.GridMap.Instance.TickAllCellTags();
+            }
+
             CurrentPhase = TurnPhase.WaitingForInput;
             OnTurnEnd?.Invoke(_currentTurn);
-            Debug.Log($"[TurnManager] ターン {_currentTurn} 終了 — 入力待ち");
         }
+
 
         /// <summary>
         /// ターン数をリセットする（ルール初期化/セーフティネット用）。

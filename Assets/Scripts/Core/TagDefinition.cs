@@ -21,12 +21,16 @@ namespace FlipLogic.Core
         /// <summary>タグの発生源エンティティ名（トレーサビリティ用）</summary>
         public string Source;
 
-        public TagDefinition(string key, string value, int duration = 0, string source = "")
+        /// <summary>タグの振る舞い定義（世界法則）へのID参照</summary>
+        public string BehaviorId;
+
+        public TagDefinition(string key, string value, int duration = 0, string source = "", string behaviorId = "")
         {
             Key = key;
             Value = value;
             Duration = duration;
             Source = source;
+            BehaviorId = behaviorId;
         }
 
         /// <summary>永続タグか。</summary>

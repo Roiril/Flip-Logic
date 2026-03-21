@@ -45,7 +45,8 @@ namespace FlipLogic.Explore
                     var rule = GameManager.Instance.RulebookData?.GetActiveRules()?.Count > 0
                         ? GameManager.Instance.RulebookData.GetActiveRules()[0]
                         : null;
-                    Battle.BattleManager.Instance.StartBattle(player, entity, rule);
+                    bool isTutorial = entity.EntityName != null && entity.EntityName.StartsWith("IceSlime");
+                    Battle.BattleManager.Instance.StartBattle(player, entity, rule, isTutorial);
                     break;
                 }
             }

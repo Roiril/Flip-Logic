@@ -79,6 +79,7 @@ namespace FlipLogic.Battle
         PlayerAction,
         EnemyTurn,
         RuleHack,
+        TurnEnd,
         BattleResult,
         End,
     }

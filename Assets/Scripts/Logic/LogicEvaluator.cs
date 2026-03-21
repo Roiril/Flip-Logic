@@ -11,19 +11,19 @@ namespace FlipLogic.Logic
         /// <summary>RuleDataの現在のスワップ・否定状態からLogicStateを返す。</summary>
         public static LogicState Evaluate(RuleData rule)
         {
-            return rule.EvaluateState();
+            return rule.GetCurrentLogicState();
         }
 
         /// <summary>指定ルールの現在状態が、要求される論理状態と一致するかを判定する。</summary>
         public static bool CheckState(RuleData rule, LogicState requiredState)
         {
-            return rule.EvaluateState() == requiredState;
+            return rule.GetCurrentLogicState() == requiredState;
         }
 
         /// <summary>ルールの現在状態を日本語テキストとして返す。</summary>
         public static string GetStateDisplayText(RuleData rule)
         {
-            var state = rule.EvaluateState();
+            var state = rule.GetCurrentLogicState();
             switch (state)
             {
                 case LogicState.Original:
@@ -34,10 +34,19 @@ namespace FlipLogic.Logic
                     return "裏（¬P→¬Q）";
                 case LogicState.Contrapositive:
                     return "対偶（¬Q→¬P）";
+                case LogicState.PNegatedOnly:
+                    return "前提否定（¬P→Q）";
+                case LogicState.QNegatedOnly:
+                    return "結論否定（P→¬Q）";
+                case LogicState.SwappedPNeg:
+                    return "逆の前提否定（¬Q→P）";
+                case LogicState.SwappedQNeg:
+                    return "逆の結論否定（Q→¬P）";
                 default:
-                    return "不完全な状態";
+                    return "未知の状態";
             }
         }
+
 
         /// <summary>ルールの現在状態を命題文として整形する。</summary>
         public static string FormatCurrentProposition(RuleData rule)

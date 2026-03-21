@@ -22,11 +22,13 @@ namespace FlipLogic.Battle
         private RuleData _activeRule;
         private bool _isInBattle;
         private bool _hasUsedRulebook;
+        private bool _showHackResult;
 
         public event Action<BattleResult> OnBattleEnd;
 
         public BattlePhase CurrentPhase => _currentPhase;
         public bool IsInBattle => _isInBattle;
+        public bool IsTutorialBattle { get; set; }
         public GameEntity EnemyEntity => _enemyEntity;
         public GameEntity PlayerEntity => _playerEntity;
 
@@ -56,13 +58,15 @@ namespace FlipLogic.Battle
         /// <summary>
         /// バトルを開始する。フィールド上でシームレスに移行。
         /// </summary>
-        public void StartBattle(GameEntity player, GameEntity enemy, RuleData rule = null)
+        public void StartBattle(GameEntity player, GameEntity enemy, RuleData rule = null, bool isTutorial = false)
         {
             _playerEntity = player;
             _enemyEntity = enemy;
             _activeRule = rule;
+            IsTutorialBattle = isTutorial;
             _isInBattle = true;
             _hasUsedRulebook = false;
+            _showHackResult = false;
 
             SetPhase(BattlePhase.Start);
 
@@ -166,24 +170,12 @@ namespace FlipLogic.Battle
 
         private void OnRuleHackComplete()
         {
-            string stateText = Logic.LogicEvaluator.GetStateDisplayText(_activeRule);
             string proposition = Logic.LogicEvaluator.FormatCurrentProposition(_activeRule);
 
-            // ルール評価を実行
-            if (Logic.RuleEvaluator.Instance != null)
-            {
-                var results = Logic.RuleEvaluator.Instance.EvaluateAll();
-                if (results.Count > 0)
-                {
-                    EndBattle(
-                        $"ルールが書き換わった！\n「{proposition}」\n\n世界の法則が変化した…",
-                        BattleResult.RuleHackVictory);
-                    return;
-                }
-            }
+            _showHackResult = true; // ルール改変直後フラグ
 
             ShowMessage(
-                $"ルールを改変した…\n「{proposition}」（{stateText}）\n\nしかし、何も起きなかった。",
+                $"ルールを改変した…\n「{proposition}」\n世界の法則が設定された",
                 () => DoEnemyTurn());
         }
 
@@ -212,8 +204,68 @@ namespace FlipLogic.Battle
             }
             else
             {
-                ShowMessage(msg, () => SetPhase(BattlePhase.PlayerCommand));
+                ShowMessage(msg, () => DoTurnEnd());
             }
+        }
+
+        private void DoTurnEnd()
+        {
+            SetPhase(BattlePhase.TurnEnd);
+
+            float preHp = _enemyEntity.Hp;
+
+            // ターン終了時のルール・タグ評価
+            var results = Logic.RuleEvaluator.Instance?.EvaluateAll();
+            Core.TagBehaviorRunner.Instance?.ExecuteTurnEndBehaviors();
+
+            _playerEntity.Tags.TickDurations();
+            _enemyEntity.Tags.TickDurations();
+            Grid.GridMap.Instance?.TickAllCellTags();
+
+            // 評価後に敵が死んだ場合（即死ルールなどの影響）
+            if (preHp > 0 && !_enemyEntity.IsAlive)
+            {
+                string ruleName = "未知の現象";
+                if (results != null)
+                {
+                    foreach (var res in results)
+                    {
+                        if (res.TargetEntity == _enemyEntity && res.AppliedEffect.Key == "Status")
+                        {
+                            ruleName = $"ルールの効果「{Logic.LogicEvaluator.FormatCurrentProposition(res.Rule)}」";
+                            break;
+                        }
+                    }
+                }
+                
+                _showHackResult = false;
+                string msg = IsTutorialBattle 
+                    ? $"{ruleName} により、\n氷スライムは死んだ！"
+                    : $"{ruleName} の影響により、\n{_enemyEntity.EntityName}は力尽きた！";
+                
+                ShowMessage(msg, () => { EndBattle($"{_enemyEntity.EntityName}を倒した！", BattleResult.Victory); });
+                return;
+            }
+
+            if (!_playerEntity.IsAlive)
+            {
+                EndBattle("力尽きた…", BattleResult.Defeat);
+                return;
+            }
+
+            // チュートリアル時、かつ、ルール改変したが死ななかった場合のアナウンス
+            if (IsTutorialBattle && _showHackResult && _enemyEntity.IsAlive)
+            {
+                _showHackResult = false;
+                ShowMessage("ルール改変の結果、\n氷スライムは生き延びた！", () =>
+                {
+                    SetPhase(BattlePhase.PlayerCommand);
+                });
+                return;
+            }
+
+            _showHackResult = false;
+            SetPhase(BattlePhase.PlayerCommand);
         }
 
         private void EndBattle(string msg, BattleResult result)

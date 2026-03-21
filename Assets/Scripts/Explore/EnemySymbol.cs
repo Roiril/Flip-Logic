@@ -15,6 +15,8 @@ namespace FlipLogic.Explore
         [SerializeField] private EnemyAIType _aiType = EnemyAIType.Patrol;
         [SerializeField] private int _detectRange = 3;
 
+        public EnemyAIType AIType { get => _aiType; set => _aiType = value; }
+
         private GameEntity _entity;
         private Vector3 _targetWorldPos;
         private bool _isMoving;
@@ -121,6 +123,11 @@ namespace FlipLogic.Explore
             {
                 MoveTo(newPos);
             }
+        }
+
+        public void ForceMoveTo(Vector2Int pos)
+        {
+            MoveTo(pos);
         }
 
         private void MoveTo(Vector2Int pos)
