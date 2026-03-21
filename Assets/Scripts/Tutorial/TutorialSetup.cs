@@ -61,8 +61,8 @@ namespace FlipLogic.Tutorial
                     _enemyEntity.transform.localScale = new Vector3(0.7f, 0.7f, 1f);
                 }
 
-                // 氷属性スライムとして設定
-                _enemyEntity.Tags.AddTag(new TagDefinition("Element", "Ice", 0, "Nature"));
+                // チュートリアル用のタグを付与
+                _enemyEntity.Tags.AddTag(new TagDefinition("Element", "Ice", -1, "Nature"));
                 _enemyEntity.EntityName = "IceSlime";
 
                 var sym = _enemyEntity.GetComponent<Explore.EnemySymbol>();
@@ -72,7 +72,7 @@ namespace FlipLogic.Tutorial
             // 火属性マスを設置（スライム巡回経路上）
             if (GridMap.Instance != null)
             {
-                GridMap.Instance.AddCellTag(new Vector2Int(5, 5), new TagDefinition("Element", "Fire", 0, "Tutorial"));
+                GridMap.Instance.AddCellTag(new Vector2Int(5, 5), new TagDefinition("Element", "Fire", -1, "Tutorial"));
             }
 
             // TagBehaviorRunnerがない場合は生成

@@ -30,7 +30,7 @@ namespace FlipLogic.Core
                 if (_tags[i].Key == tag.Key && _tags[i].Value == tag.Value)
                 {
                     // 既存タグのDurationを更新（より長い方を採用）
-                    if (tag.Duration == 0 || (_tags[i].Duration > 0 && tag.Duration > _tags[i].Duration))
+                    if (tag.Duration == -1 || (_tags[i].Duration != -1 && tag.Duration > _tags[i].Duration))
                     {
                         _tags[i] = tag;
                         OnTagsChanged?.Invoke();

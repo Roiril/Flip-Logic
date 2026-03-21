@@ -25,6 +25,24 @@ namespace FlipLogic.Rulebook
         /// <summary>ルール数。</summary>
         public int Count => _allRules.Count;
 
+        /// <summary>RulebookAsset からデータを読み込み、初期化する。</summary>
+        public void LoadFromAsset(RulebookAsset asset)
+        {
+            _pages.Clear();
+            _allRules.Clear();
+            _unlockedChapter = 1; // ひとまず1章は解放済みとする
+
+            if (asset == null) return;
+
+            foreach (var pageAsset in asset.Pages)
+            {
+                if (pageAsset != null)
+                {
+                    AddPage(pageAsset.CreateRulePage());
+                }
+            }
+        }
+
         /// <summary>ページを追加する。</summary>
         public void AddPage(RulePage page)
         {
@@ -32,7 +50,10 @@ namespace FlipLogic.Rulebook
             foreach (var rule in page.Rules)
             {
                 if (!_allRules.Exists(r => r.RuleId == rule.RuleId))
+                {
+                    rule.ValidateTags(); // 追加時にバリデーションを実行
                     _allRules.Add(rule);
+                }
             }
         }
 

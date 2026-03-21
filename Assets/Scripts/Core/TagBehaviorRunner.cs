@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using FlipLogic.Data;
 
@@ -14,6 +15,9 @@ namespace FlipLogic.Core
 
         private readonly Dictionary<string, TagBehaviorDef> _behaviorRegistry = new Dictionary<string, TagBehaviorDef>();
 
+        [SerializeField]
+        private List<TagBehaviorDef> _worldLaws = new List<TagBehaviorDef>();
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -22,25 +26,23 @@ namespace FlipLogic.Core
                 return;
             }
             Instance = this;
-            SetupWorldLaws();
+            
+            // Inspectorで未設定ならResourcesから自動ロードするフェールセーフ
+            if (_worldLaws == null || _worldLaws.Count == 0)
+            {
+                _worldLaws = new List<TagBehaviorDef>(Resources.LoadAll<TagBehaviorDef>("TagBehaviors"));
+            }
+
+            foreach (var law in _worldLaws)
+            {
+                RegisterBehavior(law);
+            }
         }
 
         public void RegisterBehavior(TagBehaviorDef def)
         {
+            if (def == null) return;
             _behaviorRegistry[def.BehaviorId] = def;
-        }
-
-        private void SetupWorldLaws()
-        {
-            // 即死の法則
-            RegisterBehavior(new TagBehaviorDef
-            {
-                BehaviorId = "InstantDeath",
-                DisplayName = "即死",
-                Trigger = TagTrigger.TurnEnd,
-                Effect = TagBehaviorType.SetHpZero,
-                Description = "ターン終了時にHPを0にする。"
-            });
         }
 
         /// <summary>
@@ -48,7 +50,7 @@ namespace FlipLogic.Core
         /// </summary>
         public void ExecuteTurnEndBehaviors()
         {
-            var entities = UnityEngine.Object.FindObjectsByType<GameEntity>(UnityEngine.FindObjectsSortMode.None);
+            var entities = EntityRegistry.Instance.GetAllEntities().ToArray();
             
             // 1. マスとエンティティの相互作用（絶対法則）— 先に実行してタグを付与
             ExecuteTileInteractions(entities);
@@ -97,6 +99,40 @@ namespace FlipLogic.Core
                 case TagBehaviorType.SetHpZero:
                     target.Hp = 0;
                     Debug.Log($"[WorldLaw] {target.EntityName} は {def.DisplayName} により倒れた。");
+                    break;
+                case TagBehaviorType.DealDamage:
+                    if (def.Params != null && def.Params.Length > 0 && int.TryParse(def.Params[0], out int dmg))
+                    {
+                        target.Hp = Mathf.Max(0, target.Hp - dmg);
+                        Debug.Log($"[WorldLaw] {target.EntityName} は {def.DisplayName} により {dmg} のダメージを受けた。");
+                    }
+                    break;
+                case TagBehaviorType.Heal:
+                    if (def.Params != null && def.Params.Length > 0 && int.TryParse(def.Params[0], out int heal))
+                    {
+                        target.Hp = Mathf.Min(target.MaxHp, target.Hp + heal);
+                        Debug.Log($"[WorldLaw] {target.EntityName} は {def.DisplayName} により {heal} 回復した。");
+                    }
+                    break;
+                case TagBehaviorType.AddTag:
+                    if (def.Params != null && def.Params.Length >= 2)
+                    {
+                        int dur = -1;
+                        if (def.Params.Length >= 3) int.TryParse(def.Params[2], out dur);
+                        target.Tags.AddTag(new TagDefinition(def.Params[0], def.Params[1], dur, def.DisplayName));
+                        Debug.Log($"[WorldLaw] {target.EntityName} に {def.Params[0]}:{def.Params[1]} が付与された。");
+                    }
+                    break;
+                case TagBehaviorType.RemoveTag:
+                    if (def.Params != null && def.Params.Length >= 2)
+                    {
+                        target.Tags.RemoveTag(def.Params[0], def.Params[1]);
+                        Debug.Log($"[WorldLaw] {target.EntityName} から {def.Params[0]}:{def.Params[1]} が除去された。");
+                    }
+                    break;
+                case TagBehaviorType.ClearStatus:
+                    target.Tags.RemoveAllByKey("Status");
+                    Debug.Log($"[WorldLaw] {target.EntityName} のステータス異常が全て解除された。");
                     break;
             }
         }

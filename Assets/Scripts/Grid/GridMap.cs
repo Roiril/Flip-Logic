@@ -26,6 +26,9 @@ namespace FlipLogic.Grid
         /// <summary>セル上のエンティティを追跡。</summary>
         private readonly Dictionary<Vector2Int, List<Core.GameEntity>> _entityMap = new Dictionary<Vector2Int, List<Core.GameEntity>>();
 
+        /// <summary>エンティティの現在位置を追跡（解除の O(1) 化用）。</summary>
+        private readonly Dictionary<Core.GameEntity, Vector2Int> _entityPositions = new Dictionary<Core.GameEntity, Vector2Int>();
+
         /// <summary>マップサイズ。</summary>
         public Vector2Int MapSize => _mapSize;
 
@@ -102,14 +105,19 @@ namespace FlipLogic.Grid
             if (!_entityMap.ContainsKey(pos))
                 _entityMap[pos] = new List<Core.GameEntity>();
             _entityMap[pos].Add(entity);
+            _entityPositions[entity] = pos;
         }
 
-        /// <summary>エンティティを位置マップから除去する。</summary>
+        /// <summary>エンティティを位置マップから除去する（O(1) 化）。</summary>
         public void UnregisterEntity(Core.GameEntity entity)
         {
-            foreach (var kvp in _entityMap)
+            if (_entityPositions.TryGetValue(entity, out var pos))
             {
-                kvp.Value.Remove(entity);
+                if (_entityMap.TryGetValue(pos, out var list))
+                {
+                    list.Remove(entity);
+                }
+                _entityPositions.Remove(entity);
             }
         }
 

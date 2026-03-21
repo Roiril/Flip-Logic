@@ -33,7 +33,8 @@ namespace FlipLogic.Core
     /// プレイヤーが改変できない固定の挙動を記述する。
     /// </summary>
     [Serializable]
-    public class TagBehaviorDef
+    [CreateAssetMenu(fileName = "NewTagBehavior", menuName = "FlipLogic/Tag Behavior")]
+    public class TagBehaviorDef : ScriptableObject
     {
         public string BehaviorId;
         public string DisplayName;

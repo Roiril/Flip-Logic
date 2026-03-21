@@ -123,6 +123,16 @@ namespace FlipLogic.Core
                 0f
             );
         }
+
+        private void OnEnable()
+        {
+            EntityRegistry.Instance.Register(this);
+        }
+
+        private void OnDisable()
+        {
+            EntityRegistry.Instance.Unregister(this);
+        }
     }
 
     /// <summary>

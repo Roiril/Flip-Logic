@@ -60,7 +60,7 @@ namespace FlipLogic.Tutorial
                     if (isWall && GridMap.Instance != null)
                     {
                         GridMap.Instance.AddCellTag(new Vector2Int(x, y),
-                            new TagDefinition("Terrain", "Wall", 0, "Map"));
+                            new TagDefinition("Terrain", "Wall", -1, "Map"));
                     }
                 }
             }

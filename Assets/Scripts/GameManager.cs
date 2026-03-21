@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Linq;
 using FlipLogic.Data;
 using FlipLogic.Battle;
 using FlipLogic.Rulebook;
@@ -21,6 +22,9 @@ namespace FlipLogic.Core
         [SerializeField] private TurnManager _turnManager;
         [SerializeField] private RuleEvaluator _ruleEvaluator;
         [SerializeField] private BattleManager _battleManager;
+
+        [Header("Data")]
+        [SerializeField] private RulebookAsset _initialRulebook;
 
         private GameState _gameState;
         private RulebookManager _rulebookManager;
@@ -50,55 +54,32 @@ namespace FlipLogic.Core
             if (_battleManager == null) _battleManager = FindAnyObjectByType<BattleManager>();
             if (_playerEntity == null)
             {
-                var playerObj = GameObject.FindGameObjectWithTag("Player");
-                if (playerObj != null) _playerEntity = playerObj.GetComponent<GameEntity>();
+                _playerEntity = EntityRegistry.Instance.GetEntities(EntityType.Player).FirstOrDefault();
             }
 
-            // テスト用ルールを設定
-            SetupTestRules();
+            // ルールブックの読み込み
+            if (_initialRulebook != null)
+            {
+                _rulebookManager.LoadFromAsset(_initialRulebook);
+                _rulebookManager.UnlockChapter(1);
+            }
+            else
+            {
+                Debug.LogWarning("[GameManager] InitialRulebook が設定されていません。");
+            }
+
+            // RuleEvaluatorにルールを供給
+            if (_ruleEvaluator != null)
+            {
+                _ruleEvaluator.SetRules(_rulebookManager.GetActiveRules());
+            }
+
+            // ルール改変能力を解放（テスト用。のちにシナリオ進行で制御する）
+            _gameState.IsRuleHackUnlocked = true;
 
             // バトルイベント登録
             if (_battleManager != null)
                 _battleManager.OnBattleEnd += OnBattleEnd;
-        }
-
-        /// <summary>テスト用ルール設定。</summary>
-        private void SetupTestRules()
-        {
-            // 第1章: 状態異常の法則
-            var rule1 = new RuleData
-            {
-                RuleId = "rule_fire_ice",
-                RuleName = "炎と氷の法則",
-                Description = "火のマスに乗った氷スライムは即死する。\n※論理を書き換えることでスライムとマスの因果関係が変化します。",
-                Chapter = 1,
-                IsActive = true,
-                Condition = new PropositionData("氷スライムが火のマスにいる", "氷スライムが火のマスにいない"),
-                Result = new PropositionData("氷スライムは死ぬ", "氷スライムは死なない"),
-                SubjectFilterP = new TagCondition { Target = RuleTarget.Entity, Key = "Element", Value = "Ice", RequirePresence = true },
-                TagConditionP = new TagCondition { Target = RuleTarget.TileOfEntity, Key = "Element", Value = "Fire", RequirePresence = true },
-                TagResultQ = new TagEffect { Target = RuleTarget.Entity, Key = "Status", Value = "InstantDeath", Operation = TagOperation.Add, Duration = 1, BehaviorId = "InstantDeath" },
-            };
-
-            var page1 = new RulePage
-            {
-                Chapter = 1,
-                Title = "状態異常の法則",
-                Description = "世界における属性と状態異常のルール"
-            };
-            page1.Rules.Add(rule1);
-
-            _rulebookManager.AddPage(page1);
-            _rulebookManager.UnlockChapter(1);
-
-            // RuleEvaluatorにルールを供給
-            if (_ruleEvaluator != null)
-                _ruleEvaluator.SetRules(_rulebookManager.GetActiveRules());
-
-            // ルール改変能力を解放（テスト用）
-            _gameState.IsRuleHackUnlocked = true;
-
-            Debug.Log($"[GameManager] テストルール設定完了: {_rulebookManager.Count}件");
         }
 
         /// <summary>セーフティネット: 全ルールを初期状態に戻す。</summary>

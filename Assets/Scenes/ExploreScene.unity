@@ -247,6 +247,7 @@ MonoBehaviour:
   _turnManager: {fileID: 0}
   _ruleEvaluator: {fileID: 0}
   _battleManager: {fileID: 0}
+  _initialRulebook: {fileID: 11400000, guid: 3a7e06cd7bd25914196a9255cec26abb, type: 2}
 --- !u!4 &920552212
 Transform:
   m_ObjectHideFlags: 0

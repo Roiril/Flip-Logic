@@ -1,4 +1,6 @@
 using System;
+using UnityEngine;
+using FlipLogic.Data;
 
 namespace FlipLogic.Core
 {
@@ -15,7 +17,7 @@ namespace FlipLogic.Core
         /// <summary>タグの値（例: "Fire", "Physical", "Poison"）</summary>
         public string Value;
 
-        /// <summary>残りターン数。0 = 永続。毎ターン減算され、0になると除去。</summary>
+        /// <summary>残りターン数。-1 = 永続、0 = 即時消滅、正数 = 残りターン。毎ターン減算され、0以下になると除去。</summary>
         public int Duration;
 
         /// <summary>タグの発生源エンティティ名（トレーサビリティ用）</summary>
@@ -24,8 +26,13 @@ namespace FlipLogic.Core
         /// <summary>タグの振る舞い定義（世界法則）へのID参照</summary>
         public string BehaviorId;
 
-        public TagDefinition(string key, string value, int duration = 0, string source = "", string behaviorId = "")
+        public TagDefinition(string key, string value, int duration = -1, string source = "", string behaviorId = "")
         {
+            if (TagKeyRegistry.Instance != null && !TagKeyRegistry.Instance.IsValid(key, value))
+            {
+                Debug.LogWarning($"[TagSystem] 未定義のタグまたは不正な値が使用されました: {key}:{value}");
+            }
+
             Key = key;
             Value = value;
             Duration = duration;
@@ -34,7 +41,7 @@ namespace FlipLogic.Core
         }
 
         /// <summary>永続タグか。</summary>
-        public bool IsPermanent => Duration == 0;
+        public bool IsPermanent => Duration == -1;
 
         /// <summary>Key-Valueの一致で同一タグと判定する。</summary>
         public bool Equals(TagDefinition other)

@@ -82,6 +82,14 @@ namespace FlipLogic.Data
         /// <summary>ルールの章番号（ページ概念）。</summary>
         public int Chapter = 1;
 
+        /// <summary>タグ設定のバリデーションを実行する</summary>
+        public void ValidateTags()
+        {
+            SubjectFilterP?.Validate();
+            TagConditionP?.Validate();
+            TagResultQ?.Validate();
+        }
+
         /// <summary>現在のP側（表示上の条件側）を返す。</summary>
         public PropositionData DisplayCondition => IsSwapped ? Result : Condition;
 
@@ -167,6 +175,25 @@ namespace FlipLogic.Data
         public string Value;
         public bool RequirePresence = true; // trueなら「存在する」、falseなら「存在しない」
 
+        public TagCondition() { }
+
+        public TagCondition(string key, string value, bool requirePresence = true, RuleTarget target = RuleTarget.Entity)
+        {
+            Key = key;
+            Value = value;
+            RequirePresence = requirePresence;
+            Target = target;
+            Validate();
+        }
+
+        public void Validate()
+        {
+            if (TagKeyRegistry.Instance != null && !TagKeyRegistry.Instance.IsValid(Key, Value))
+            {
+                UnityEngine.Debug.LogWarning($"[TagCondition] 未定義のタグまたは値が指定されています。Key: {Key}, Value: {Value}");
+            }
+        }
+
         /// <summary>否定状態を考慮した評価。</summary>
         public bool Evaluate(TagContainer tags, bool isNegated)
         {
@@ -188,8 +215,29 @@ namespace FlipLogic.Data
         public string Key;
         public string Value;
         public TagOperation Operation;
-        public int Duration;
+        public int Duration = -1;
         public string BehaviorId = "";
+
+        public TagEffect() { }
+
+        public TagEffect(string key, string value, TagOperation operation, int duration = -1, string behaviorId = "", RuleTarget target = RuleTarget.Entity)
+        {
+            Key = key;
+            Value = value;
+            Operation = operation;
+            Duration = duration;
+            BehaviorId = behaviorId;
+            Target = target;
+            Validate();
+        }
+
+        public void Validate()
+        {
+            if (TagKeyRegistry.Instance != null && !TagKeyRegistry.Instance.IsValid(Key, Value))
+            {
+                UnityEngine.Debug.LogWarning($"[TagEffect] 未定義のタグまたは値が指定されています。Key: {Key}, Value: {Value}");
+            }
+        }
 
         /// <summary>否定状態を考慮した効果適用。</summary>
         public void Apply(TagContainer tags, bool isNegated, string source = "")

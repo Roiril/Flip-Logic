@@ -78,7 +78,7 @@ namespace FlipLogic.Core
             }
 
             CurrentPhase = TurnPhase.TagTick;
-            var entities = UnityEngine.Object.FindObjectsByType<GameEntity>(UnityEngine.FindObjectsSortMode.None);
+            var entities = EntityRegistry.Instance.GetAllEntities();
             foreach (var entity in entities)
             {
                 entity.Tags.TickDurations();

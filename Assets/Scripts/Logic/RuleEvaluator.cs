@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using FlipLogic.Data;
 
@@ -61,8 +62,8 @@ namespace FlipLogic.Logic
         {
             _lastResults.Clear();
 
-            var entities = UnityEngine.Object.FindObjectsByType<Core.GameEntity>(UnityEngine.FindObjectsSortMode.None);
-            if (entities.Length == 0) return _lastResults;
+            var entities = Core.EntityRegistry.Instance.GetAllEntities();
+            if (!entities.Any()) return _lastResults;
 
             foreach (var rule in _activeRules)
             {

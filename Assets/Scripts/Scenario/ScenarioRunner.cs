@@ -190,13 +190,14 @@ namespace FlipLogic.Scenario
                 GridMap.Instance.RegisterEntity(entity, pos.Value);
             }
 
-            entity.Tags.AddTag(new TagDefinition("Element", "Ice", 0, "Nature"));
+            // チュートリアル向けの仮実装（後でデータ化）
+            entity.Tags.AddTag(new TagDefinition("Element", "Ice", -1, "Nature"));
             OnEnemySpawned?.Invoke(entity);
         }
 
         private void DoDespawn(string entityName)
         {
-            var entities = FindObjectsByType<GameEntity>(FindObjectsSortMode.None);
+            var entities = EntityRegistry.Instance.GetAllEntities();
             foreach (var e in entities)
             {
                 if (e.EntityName == entityName)
@@ -214,7 +215,7 @@ namespace FlipLogic.Scenario
             if (!pos.HasValue || GridMap.Instance == null) return;
             var parts = tagStr.Split(':');
             if (parts.Length < 2) return;
-            GridMap.Instance.AddCellTag(pos.Value, new TagDefinition(parts[0], parts[1], 0, "Scenario"));
+            GridMap.Instance.AddCellTag(pos.Value, new TagDefinition(parts[0], parts[1], -1, "Scenario"));
             if (TileOverlayRenderer.Instance != null)
                 TileOverlayRenderer.Instance.UpdateOverlay(pos.Value);
         }
@@ -227,7 +228,7 @@ namespace FlipLogic.Scenario
             var newPos = ParseV2I(parts[1]);
             if (!newPos.HasValue) return;
 
-            var entities = FindObjectsByType<GameEntity>(FindObjectsSortMode.None);
+            var entities = EntityRegistry.Instance.GetAllEntities();
             foreach (var e in entities)
             {
                 if (e.EntityName == eName)
@@ -256,7 +257,7 @@ namespace FlipLogic.Scenario
             var tPos = ParseV2I(parts[1]);
             if (!tPos.HasValue) return;
 
-            var entities = FindObjectsByType<GameEntity>(FindObjectsSortMode.None);
+            var entities = EntityRegistry.Instance.GetAllEntities();
             foreach (var e in entities)
             {
                 if (e.EntityName == eName && e.GridPosition == tPos.Value)
@@ -267,7 +268,7 @@ namespace FlipLogic.Scenario
         private void CheckEntityDied(ScenarioStep step)
         {
             string eName = step.TriggerParam;
-            var entities = FindObjectsByType<GameEntity>(FindObjectsSortMode.None);
+            var entities = EntityRegistry.Instance.GetAllEntities();
             foreach (var e in entities)
             {
                 if (e.EntityName == eName && e.IsAlive) return;
