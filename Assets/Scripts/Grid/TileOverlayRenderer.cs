@@ -16,6 +16,7 @@ namespace FlipLogic.Grid
         private readonly Dictionary<Vector2Int, GameObject> _overlays = new Dictionary<Vector2Int, GameObject>();
         private readonly Dictionary<string, Sprite> _patternCache = new Dictionary<string, Sprite>();
 
+        [SerializeField] private Data.TileVisualDef _visualDef;
         private Transform _overlayParent;
 
         private void Awake()
@@ -28,6 +29,13 @@ namespace FlipLogic.Grid
             Instance = this;
             _overlayParent = new GameObject("TileOverlays").transform;
             _overlayParent.SetParent(transform);
+
+#if UNITY_EDITOR
+            if (_visualDef == null)
+            {
+                _visualDef = UnityEditor.AssetDatabase.LoadAssetAtPath<Data.TileVisualDef>("Assets/Data/Visuals/DefaultTileVisual.asset");
+            }
+#endif
         }
 
         /// <summary>指定セルのオーバーレイを更新する。</summary>
@@ -36,11 +44,21 @@ namespace FlipLogic.Grid
             if (GridMap.Instance == null) return;
 
             var tags = GridMap.Instance.GetCellTags(pos);
-            Color? overlayColor = GetOverlayColor(tags);
-
-            if (overlayColor.HasValue)
+            Data.TileVisualMapping mapping = null;
+            
+            if (_visualDef != null)
             {
-                SetOverlay(pos, overlayColor.Value);
+                mapping = _visualDef.GetMappingForTags(tags);
+            }
+            else
+            {
+                // Fallback for when VisualDef is not assigned yet
+                mapping = GetFallbackMapping(tags);
+            }
+
+            if (mapping != null)
+            {
+                SetOverlay(pos, mapping);
             }
             else
             {
@@ -65,12 +83,12 @@ namespace FlipLogic.Grid
         }
 
         /// <summary>指定セルにオーバーレイを設置/更新する。</summary>
-        private void SetOverlay(Vector2Int pos, Color color)
+        private void SetOverlay(Vector2Int pos, Data.TileVisualMapping mapping)
         {
             if (_overlays.TryGetValue(pos, out var existing))
             {
-                var sr = existing.GetComponent<SpriteRenderer>();
-                sr.color = color;
+                var existingSr = existing.GetComponent<SpriteRenderer>();
+                ApplyMappingToRenderer(existingSr, mapping);
                 return;
             }
 
@@ -80,11 +98,24 @@ namespace FlipLogic.Grid
             go.transform.localScale = new Vector3(0.95f, 0.95f, 1f);
 
             var renderer = go.AddComponent<SpriteRenderer>();
-            renderer.sprite = GetOrCreatePattern(color);
-            renderer.color = Color.white; // パターン自体に色が入っている
+            ApplyMappingToRenderer(renderer, mapping);
             renderer.sortingOrder = -5;
 
             _overlays[pos] = go;
+        }
+
+        private void ApplyMappingToRenderer(SpriteRenderer renderer, Data.TileVisualMapping mapping)
+        {
+            if (mapping.UseCustomSprite && mapping.CustomSprite != null)
+            {
+                renderer.sprite = mapping.CustomSprite;
+                renderer.color = mapping.OverlayColor;
+            }
+            else
+            {
+                renderer.sprite = GetOrCreatePattern(mapping.OverlayColor);
+                renderer.color = Color.white; // パターン自体に色が入っている
+            }
         }
 
         private void RemoveOverlay(Vector2Int pos)
@@ -105,15 +136,15 @@ namespace FlipLogic.Grid
             _overlays.Clear();
         }
 
-        /// <summary>属性タグに対応する表示色を返す。</summary>
-        private Color? GetOverlayColor(TagContainer tags)
+        /// <summary>未設定時のフォールバック。</summary>
+        private Data.TileVisualMapping GetFallbackMapping(TagContainer tags)
         {
             if (tags.HasTag("Element", "Fire"))
-                return new Color(1f, 0.55f, 0.1f, 0.6f); // オレンジ
+                return new Data.TileVisualMapping { OverlayColor = new Color(1f, 0.55f, 0.1f, 0.6f) };
             if (tags.HasTag("Element", "Poison"))
-                return new Color(0.6f, 0.15f, 0.8f, 0.6f); // 紫
+                return new Data.TileVisualMapping { OverlayColor = new Color(0.6f, 0.15f, 0.8f, 0.6f) };
             if (tags.HasTag("Element", "Ice"))
-                return new Color(0.4f, 0.8f, 1.0f, 0.6f); // 水色
+                return new Data.TileVisualMapping { OverlayColor = new Color(0.4f, 0.8f, 1.0f, 0.6f) };
             return null;
         }
 

@@ -29,11 +29,10 @@ namespace FlipLogic.Explore
             var player = GameManager.Instance?.PlayerEntity;
             if (player == null) return;
 
-            // 隣接4マスとプレイヤー位置をチェック
-            var enemies = FindObjectsByType<EnemySymbol>(FindObjectsSortMode.None);
-            foreach (var enemySymbol in enemies)
+            // 隣接4マスとプレイヤー位置をチェック（EntityRegistry経由）
+            var enemies = EntityRegistry.Instance.GetEntities(EntityType.Enemy);
+            foreach (var entity in enemies)
             {
-                var entity = enemySymbol.GetComponent<GameEntity>();
                 if (entity == null || !entity.IsAlive) continue;
 
                 var diff = entity.GridPosition - player.GridPosition;

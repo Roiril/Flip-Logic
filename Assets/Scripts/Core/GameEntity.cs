@@ -81,6 +81,13 @@ namespace FlipLogic.Core
         /// </summary>
         public void Initialize(string entityName, EntityType type, Vector2Int gridPos, int maxHp = 0, int attack = 0, int defense = 0)
         {
+            bool wasRegistered = false;
+            if (gameObject.activeInHierarchy && EntityRegistry.Instance != null)
+            {
+                EntityRegistry.Instance.Unregister(this);
+                wasRegistered = true;
+            }
+
             _entityName = entityName;
             _entityType = type;
             _gridPosition = gridPos;
@@ -88,6 +95,11 @@ namespace FlipLogic.Core
             _hp = maxHp;
             _attack = attack;
             _defense = defense;
+
+            if (wasRegistered)
+            {
+                EntityRegistry.Instance.Register(this);
+            }
         }
 
         /// <summary>

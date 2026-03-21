@@ -14,7 +14,7 @@ namespace FlipLogic.Data
         public string EnemyName;
         [TextArea(2, 4)]
         public string Description;
-        public Sprite Portrait;
+        public EntityVisualDef VisualDef;
 
         [Header("ステータス")]
         public int MaxHp = 100;

@@ -99,11 +99,11 @@ namespace FlipLogic.Explore
 
         private void DoChase()
         {
-            // プレイヤーを探す
-            var players = FindObjectsByType<PlayerController>(FindObjectsSortMode.None);
-            if (players.Length == 0) return;
+            // プレイヤーを EntityRegistry から取得
+            var players = EntityRegistry.Instance.GetEntities(EntityType.Player);
+            if (players.Count == 0) return;
 
-            var playerEntity = players[0].GetComponent<GameEntity>();
+            var playerEntity = players[0];
             if (playerEntity == null) return;
 
             var diff = playerEntity.GridPosition - _entity.GridPosition;

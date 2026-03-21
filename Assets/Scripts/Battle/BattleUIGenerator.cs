@@ -15,10 +15,19 @@ namespace FlipLogic.Battle
         private Canvas _canvas;
         private BattleUIController _uiController;
 
+        [SerializeField] private UITheme _theme;
+        private UITheme Theme => _theme != null ? _theme : (_theme = ScriptableObject.CreateInstance<UITheme>());
+
         public BattleUIController UIController => _uiController;
 
         private void Start()
         {
+#if UNITY_EDITOR
+            if (_theme == null)
+            {
+                _theme = UnityEditor.AssetDatabase.LoadAssetAtPath<UITheme>("Assets/Data/Visuals/DefaultUITheme.asset");
+            }
+#endif
             EnsureCanvas();
             EnsureEventSystem();
             GenerateBattleUI();
@@ -69,108 +78,108 @@ namespace FlipLogic.Battle
             // --- メッセージパネル ---
             var msgPanel = CreatePanel(root.transform, "MessagePanel",
                 new Vector2(0.1f, 0.02f), new Vector2(0.9f, 0.28f),
-                new Color(0.05f, 0.05f, 0.12f, 0.95f));
+                Theme.MessagePanelColor);
             var msgText = CreateText(msgPanel.transform, "MessageText",
                 new Vector2(0.05f, 0.1f), new Vector2(0.95f, 0.9f),
-                "", 16, Color.white);
+                "", 16, Theme.DefaultTextColor);
 
             // --- コマンドパネル ---
             var cmdPanel = CreatePanel(root.transform, "CommandPanel",
                 new Vector2(0.6f, 0.32f), new Vector2(0.95f, 0.7f),
-                new Color(0.08f, 0.08f, 0.15f, 0.9f));
+                Theme.CommandPanelColor);
             cmdPanel.SetActive(false);
 
             var attackBtn = CreateButton(cmdPanel.transform, "AttackBtn", "たたかう",
                 new Vector2(0.05f, 0.75f), new Vector2(0.95f, 0.95f),
-                new Color(0.8f, 0.3f, 0.3f));
+                Theme.AttackButtonColor);
             var defendBtn = CreateButton(cmdPanel.transform, "DefendBtn", "ぼうぎょ",
                 new Vector2(0.05f, 0.52f), new Vector2(0.95f, 0.72f),
-                new Color(0.3f, 0.5f, 0.8f));
+                Theme.DefendButtonColor);
             var rulebookBtn = CreateButton(cmdPanel.transform, "RulebookBtn", "ルールブック",
                 new Vector2(0.05f, 0.29f), new Vector2(0.95f, 0.49f),
-                new Color(0.1f, 0.8f, 0.7f));
+                Theme.RulebookButtonColor);
             var fleeBtn = CreateButton(cmdPanel.transform, "FleeBtn", "にげる",
                 new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.25f),
-                new Color(0.5f, 0.5f, 0.5f));
+                Theme.FleeButtonColor);
 
             // --- HP表示 ---
             var hpPanel = CreatePanel(root.transform, "HPPanel",
                 new Vector2(0.05f, 0.72f), new Vector2(0.55f, 0.98f),
-                new Color(0.03f, 0.03f, 0.08f, 0.85f));
+                Theme.HpPanelColor);
 
             var enemyNameText = CreateText(hpPanel.transform, "EnemyName",
                 new Vector2(0.05f, 0.55f), new Vector2(0.95f, 0.95f),
-                "敵", 18, new Color(1f, 0.4f, 0.4f));
+                "敵", 18, Theme.EnemyNameTextColor);
             var enemyHpText = CreateText(hpPanel.transform, "EnemyHP",
                 new Vector2(0.55f, 0.55f), new Vector2(0.95f, 0.95f),
-                "HP: 0/0", 14, new Color(1f, 0.8f, 0.8f));
+                "HP: 0/0", 14, Theme.EnemyHpTextColor);
             enemyHpText.alignment = TextAnchor.MiddleRight;
 
             var playerHpText = CreateText(hpPanel.transform, "PlayerHP",
                 new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.45f),
-                "HP: 0/0", 16, new Color(0.8f, 1f, 0.8f));
+                "HP: 0/0", 16, Theme.PlayerHpTextColor);
 
             // --- ルールハックパネル ---
             var ruleHackPanel = CreatePanel(root.transform, "RuleHackPanel",
                 new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.95f),
-                new Color(0.02f, 0.02f, 0.08f, 0.98f));
+                Theme.RuleHackPanelColor);
             ruleHackPanel.SetActive(false);
             ruleHackPanel.AddComponent<RuleHackPanelController>();
 
             // RuleHackPanel内部のUI
             CreateText(ruleHackPanel.transform, "RHTitle",
                 new Vector2(0.05f, 0.88f), new Vector2(0.95f, 0.98f),
-                "RULE HACK", 22, new Color(0f, 1f, 0.8f));
+                "RULE HACK", 22, Theme.RuleHackTitleColor);
 
             // 命題ブロック: P (条件)
             var pBlock = CreatePanel(ruleHackPanel.transform, "ConditionBlock",
                 new Vector2(0.1f, 0.58f), new Vector2(0.9f, 0.78f),
-                new Color(0.12f, 0.12f, 0.2f));
+                Theme.PropositionBlockColor);
             pBlock.AddComponent<UI.PropositionBlock>();
             var pText = CreateText(pBlock.transform, "ContentText",
                 new Vector2(0.1f, 0.1f), new Vector2(0.7f, 0.9f),
-                "P", 16, Color.white);
+                "P", 16, Theme.DefaultTextColor);
             var pNegBtn = CreateButton(pBlock.transform, "NegateBtn", "否定",
                 new Vector2(0.72f, 0.15f), new Vector2(0.95f, 0.85f),
-                new Color(0.6f, 0.2f, 0.2f));
+                Theme.NegateButtonColor);
 
             // 接続詞
             CreateText(ruleHackPanel.transform, "Connector",
                 new Vector2(0.35f, 0.48f), new Vector2(0.65f, 0.58f),
-                "ならば", 18, new Color(0.8f, 0.8f, 0.3f));
+                "ならば", 18, Theme.RuleHackConnectorColor);
 
             // 命題ブロック: Q (結果)
             var qBlock = CreatePanel(ruleHackPanel.transform, "ResultBlock",
                 new Vector2(0.1f, 0.28f), new Vector2(0.9f, 0.48f),
-                new Color(0.12f, 0.12f, 0.2f));
+                Theme.PropositionBlockColor);
             qBlock.AddComponent<UI.PropositionBlock>();
             var qText = CreateText(qBlock.transform, "ContentText",
                 new Vector2(0.1f, 0.1f), new Vector2(0.7f, 0.9f),
-                "Q", 16, Color.white);
+                "Q", 16, Theme.DefaultTextColor);
             var qNegBtn = CreateButton(qBlock.transform, "NegateBtn", "否定",
                 new Vector2(0.72f, 0.15f), new Vector2(0.95f, 0.85f),
-                new Color(0.6f, 0.2f, 0.2f));
+                Theme.NegateButtonColor);
 
             // 論理状態表示
             var stateLabel = CreateText(ruleHackPanel.transform, "StateLabel",
                 new Vector2(0.1f, 0.18f), new Vector2(0.9f, 0.28f),
-                "", 14, new Color(0.5f, 0.8f, 1f));
+                "", 14, Theme.RuleHackStateLabelColor);
 
             // 命題プレビュー
             var preview = CreateText(ruleHackPanel.transform, "Preview",
                 new Vector2(0.1f, 0.82f), new Vector2(0.9f, 0.88f),
-                "", 13, new Color(0.7f, 0.7f, 0.7f));
+                "", 13, Theme.RuleHackPreviewColor);
 
             // アクションボタン
             var swapBtn = CreateButton(ruleHackPanel.transform, "SwapBtn", "入替",
                 new Vector2(0.1f, 0.05f), new Vector2(0.38f, 0.18f),
-                new Color(0.3f, 0.6f, 0.3f));
+                Theme.SwapButtonColor);
             var resetBtn = CreateButton(ruleHackPanel.transform, "ResetBtn", "リセット",
                 new Vector2(0.4f, 0.05f), new Vector2(0.62f, 0.18f),
-                new Color(0.5f, 0.5f, 0.5f));
+                Theme.ResetButtonColor);
             var confirmBtn = CreateButton(ruleHackPanel.transform, "ConfirmBtn", "決定",
                 new Vector2(0.64f, 0.05f), new Vector2(0.9f, 0.18f),
-                new Color(0.2f, 0.5f, 0.8f));
+                Theme.ConfirmButtonColor);
 
             // UIControllerにSerializeFieldを設定（Reflectionで直接）
             SetPrivateField(_uiController, "_messageText", msgText);
@@ -258,7 +267,7 @@ namespace FlipLogic.Battle
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
             var text = go.AddComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = Theme.GetSafeFont();
             text.text = content;
             text.fontSize = fontSize;
             text.color = color;
@@ -288,7 +297,7 @@ namespace FlipLogic.Battle
             var textGo = new GameObject("Label");
             textGo.transform.SetParent(go.transform, false);
             var text = textGo.AddComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = Theme.GetSafeFont();
             text.text = label;
             text.fontSize = 16;
             text.color = Color.white;

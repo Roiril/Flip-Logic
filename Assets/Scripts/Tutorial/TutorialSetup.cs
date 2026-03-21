@@ -17,11 +17,15 @@ namespace FlipLogic.Tutorial
     public class TutorialSetup : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] private GameEntity _playerEntity;
-        [SerializeField] private GameEntity _enemyEntity;
+        [SerializeField] private GameObject _playerPrefab;
+        [SerializeField] private EnemyData _iceSlimeData;
 
         [Header("Tutorial Settings")]
+        [SerializeField] private Vector2Int _enemySpawnPos = new Vector2Int(5, 3);
         [SerializeField] private bool _showTutorial = true;
+        [SerializeField] private Data.UITheme _uiTheme;
+
+        private Data.UITheme Theme => _uiTheme != null ? _uiTheme : (_uiTheme = ScriptableObject.CreateInstance<Data.UITheme>());
 
         private Canvas _canvas;
         private GameObject _tutorialPanel;
@@ -29,6 +33,25 @@ namespace FlipLogic.Tutorial
 
         private void Start()
         {
+#if UNITY_EDITOR
+            if (_iceSlimeData == null)
+            {
+                _iceSlimeData = UnityEditor.AssetDatabase.LoadAssetAtPath<EnemyData>("Assets/Data/Enemies/IceSlime.asset");
+            }
+            if (_uiTheme == null)
+            {
+                _uiTheme = UnityEditor.AssetDatabase.LoadAssetAtPath<Data.UITheme>("Assets/Data/Visuals/DefaultUITheme.asset");
+            }
+            if (_playerPrefab == null)
+            {
+                _playerPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Player.prefab");
+            }
+#endif
+
+            // 古いアセット（EnemySymbolObj等）がシーンに残っていれば削除するセーフガード
+            var oldEnemy = GameObject.Find("EnemySymbolObj");
+            if (oldEnemy != null) Destroy(oldEnemy);
+
             SetupEntityVisuals();
             SetupTileOverlays();
 
@@ -38,35 +61,32 @@ namespace FlipLogic.Tutorial
 
         private void SetupEntityVisuals()
         {
-            // プレイヤー: 青丸＋白P
-            if (_playerEntity != null)
+            // プレイヤーを生成
+            if (_playerPrefab != null)
             {
-                var sr = _playerEntity.GetComponent<SpriteRenderer>();
+                var go = Instantiate(_playerPrefab, new Vector3(1f, 1f, 0f), Quaternion.identity);
+                go.name = "PlayerObj";
+                var entity = go.GetComponent<GameEntity>();
+                
+                var sr = go.GetComponent<SpriteRenderer>();
                 if (sr != null)
                 {
                     sr.sprite = EntitySpriteFactory.CreateCircleWithLetter('P', new Color(0.2f, 0.55f, 1.0f), Color.white);
                     sr.sortingOrder = 5;
-                    _playerEntity.transform.localScale = new Vector3(0.8f, 0.8f, 1f);
+                    go.transform.localScale = new Vector3(0.8f, 0.8f, 1f);
+                }
+
+                // カメラにターゲットを設定
+                if (CameraFollow.Instance != null)
+                {
+                    CameraFollow.Instance.Target = go.transform;
                 }
             }
 
-            // 敵: 水色丸＋白E（初期位置は火マスの2マス下）
-            if (_enemyEntity != null)
+            // 敵 (IceSlime) を EntityFactory 経由で生成
+            if (_iceSlimeData != null)
             {
-                var sr = _enemyEntity.GetComponent<SpriteRenderer>();
-                if (sr != null)
-                {
-                    sr.sprite = EntitySpriteFactory.CreateCircleWithLetter('E', new Color(0.5f, 0.9f, 1.0f), Color.white);
-                    sr.sortingOrder = 5;
-                    _enemyEntity.transform.localScale = new Vector3(0.7f, 0.7f, 1f);
-                }
-
-                // チュートリアル用のタグを付与
-                _enemyEntity.Tags.AddTag(new TagDefinition("Element", "Ice", -1, "Nature"));
-                _enemyEntity.EntityName = "IceSlime";
-
-                var sym = _enemyEntity.GetComponent<Explore.EnemySymbol>();
-                if (sym != null) sym.AIType = Explore.EnemyAIType.Stationary;
+                EntityFactory.CreateEnemy(_iceSlimeData, _enemySpawnPos);
             }
 
             // 火属性マスを設置（スライム巡回経路上）
@@ -212,15 +232,15 @@ namespace FlipLogic.Tutorial
             rect.offsetMax = Vector2.zero;
 
             var img = _tutorialPanel.AddComponent<Image>();
-            img.color = new Color(0.05f, 0.05f, 0.1f, 0.92f);
+            img.color = Theme.MessagePanelColor;
 
             // テキスト
             var textGo = new GameObject("Text");
             textGo.transform.SetParent(_tutorialPanel.transform, false);
             _tutorialText = textGo.AddComponent<Text>();
-            _tutorialText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            _tutorialText.font = Theme.GetSafeFont();
             _tutorialText.fontSize = 18;
-            _tutorialText.color = Color.white;
+            _tutorialText.color = Theme.DefaultTextColor;
             _tutorialText.alignment = TextAnchor.MiddleCenter;
             _tutorialText.lineSpacing = 1.3f;
             var tRect = textGo.GetComponent<RectTransform>();
@@ -233,10 +253,10 @@ namespace FlipLogic.Tutorial
             var arrowGo = new GameObject("Arrow");
             arrowGo.transform.SetParent(_tutorialPanel.transform, false);
             var arrowTxt = arrowGo.AddComponent<Text>();
-            arrowTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            arrowTxt.font = Theme.GetSafeFont();
             arrowTxt.text = "▼";
             arrowTxt.fontSize = 14;
-            arrowTxt.color = new Color(0.6f, 0.9f, 1f);
+            arrowTxt.color = Theme.RuleHackStateLabelColor;
             arrowTxt.alignment = TextAnchor.LowerRight;
             var aRect = arrowGo.GetComponent<RectTransform>();
             aRect.anchorMin = new Vector2(0.85f, 0.02f);
