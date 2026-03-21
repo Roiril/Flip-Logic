@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Cysharp.Threading.Tasks;
 
 namespace FlipLogic.Core
 {
@@ -50,7 +51,7 @@ namespace FlipLogic.Core
         /// プレイヤーがアクション（移動 or コマンド）を実行した時に呼ぶ。
         /// 1ターンの進行サイクルを開始する。
         /// </summary>
-        public void OnPlayerAction()
+        public async UniTaskVoid OnPlayerActionAsync()
         {
             if (CurrentPhase != TurnPhase.WaitingForInput) return;
 
@@ -60,35 +61,31 @@ namespace FlipLogic.Core
 
             OnPlayerActionComplete?.Invoke();
 
+            // バトルが発生した場合は、バトル終了までフィールドのターン進行を一時停止する
+            if (Battle.BattleManager.Instance != null && Battle.BattleManager.Instance.IsInBattle)
+            {
+                await UniTask.WaitWhile(() => Battle.BattleManager.Instance.IsInBattle);
+            }
+
             CurrentPhase = TurnPhase.EnemyAction;
             OnEnemyPhase?.Invoke();
 
-            CurrentPhase = TurnPhase.RuleEvaluation;
-            List<Logic.EvaluationResult> results = null;
-            if (Logic.RuleEvaluator.Instance != null)
+            // アニメーション用の簡易待機（エンティティが移動を終える猶予）
+            await UniTask.Delay(TimeSpan.FromSeconds(0.2f));
+
+            // もし敵の行動によってバトルなどが発生した場合の念のための待機
+            if (Battle.BattleManager.Instance != null && Battle.BattleManager.Instance.IsInBattle)
             {
-                results = Logic.RuleEvaluator.Instance.EvaluateAll();
+                await UniTask.WaitWhile(() => Battle.BattleManager.Instance.IsInBattle);
             }
+
+            CurrentPhase = TurnPhase.RuleEvaluation;
+            
+            // ターン終了判定・タグ処理の共通パイプライン呼び出し
+            var results = await TurnResolutionProcessor.ExecuteAsync();
             OnRuleEvaluationComplete?.Invoke(results);
 
-            // 絶対法則（タグの振る舞い）の実行
-            if (TagBehaviorRunner.Instance != null)
-            {
-                TagBehaviorRunner.Instance.ExecuteTurnEndBehaviors();
-            }
-
             CurrentPhase = TurnPhase.TagTick;
-            var entities = EntityRegistry.Instance.GetAllEntities();
-            foreach (var entity in entities)
-            {
-                entity.Tags.TickDurations();
-            }
-
-            // マスのタグ期限処理
-            if (Grid.GridMap.Instance != null)
-            {
-                Grid.GridMap.Instance.TickAllCellTags();
-            }
 
             CurrentPhase = TurnPhase.WaitingForInput;
             OnTurnEnd?.Invoke(_currentTurn);

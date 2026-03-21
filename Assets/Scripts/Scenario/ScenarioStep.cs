@@ -59,6 +59,7 @@ namespace FlipLogic.Scenario
         AddTileTag,      // マスにタグを付与（ActionParam = "x,y", ActionParam2 = "Key:Value"）
         WaitTurns,       // 指定ターン数待機（ActionParam = ターン数）
         EndScenario,     // シナリオ終了
-        ForceMoveEntity  // エンティティを強制移動（ActionParam = "エンティティ名;x,y"）
+        ForceMoveEntity, // エンティティを強制移動（ActionParam = "エンティティ名;x,y"）
+        ResolveTurn      // ターン終了処理（タグ・ルール評価）を発動
     }
 }

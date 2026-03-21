@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using FlipLogic.Core;
 using FlipLogic.Data;
+using Cysharp.Threading.Tasks;
 
 namespace FlipLogic.Battle
 {
@@ -49,15 +50,11 @@ namespace FlipLogic.Battle
                 _uiController = FindAnyObjectByType<BattleUIController>();
         }
 
-        /// <summary>UIControllerを外部から設定する。</summary>
         public void SetUIController(BattleUIController controller)
         {
             _uiController = controller;
         }
 
-        /// <summary>
-        /// バトルを開始する。フィールド上でシームレスに移行。
-        /// </summary>
         public void StartBattle(GameEntity player, GameEntity enemy, RuleData rule = null, bool isTutorial = false)
         {
             _playerEntity = player;
@@ -81,10 +78,15 @@ namespace FlipLogic.Battle
                 ? enemy.Tags.GetValue("EncounterMsg")
                 : $"{enemy.EntityName} が現れた！";
 
-            ShowMessage(msg, () => SetPhase(BattlePhase.PlayerCommand));
+            StartBattleFlowAsync(msg).Forget();
         }
 
-        /// <summary>プレイヤーコマンドを実行する。</summary>
+        private async UniTaskVoid StartBattleFlowAsync(string msg)
+        {
+            await ShowMessageAsync(msg);
+            SetPhase(BattlePhase.PlayerCommand);
+        }
+
         public void ExecuteCommand(BattleCommandType cmd)
         {
             if (_currentPhase != BattlePhase.PlayerCommand) return;
@@ -92,13 +94,13 @@ namespace FlipLogic.Battle
             switch (cmd)
             {
                 case BattleCommandType.Attack:
-                    DoAttack();
+                    DoAttackAsync().Forget();
                     break;
                 case BattleCommandType.Defend:
-                    DoDefend();
+                    DoDefendAsync().Forget();
                     break;
                 case BattleCommandType.Flee:
-                    DoFlee();
+                    DoFleeAsync().Forget();
                     break;
                 case BattleCommandType.OpenRulebook:
                     DoOpenRulebook();
@@ -106,7 +108,7 @@ namespace FlipLogic.Battle
             }
         }
 
-        private void DoAttack()
+        private async UniTaskVoid DoAttackAsync()
         {
             SetPhase(BattlePhase.PlayerAction);
             BattleCommand.ExecuteAttack(_playerEntity, _enemyEntity);
@@ -116,32 +118,35 @@ namespace FlipLogic.Battle
 
             if (!_enemyEntity.IsAlive)
             {
-                EndBattle($"{_enemyEntity.EntityName}を倒した！", BattleResult.Victory);
+                await EndBattleAsync($"{_enemyEntity.EntityName}を倒した！", BattleResult.Victory);
+                return;
             }
-            else
-            {
-                int damage = _playerEntity.Attack;
-                ShowMessage($"{damage}のダメージを与えた！", () => DoEnemyTurn());
-            }
+
+            int damage = _playerEntity.Attack;
+            await ShowMessageAsync($"{damage}のダメージを与えた！");
+
+            await DoEnemyTurnAsync();
         }
 
-        private void DoDefend()
+        private async UniTaskVoid DoDefendAsync()
         {
             SetPhase(BattlePhase.PlayerAction);
             BattleCommand.ExecuteDefend(_playerEntity);
-            ShowMessage("防御姿勢をとった", () => DoEnemyTurn());
+            await ShowMessageAsync("防御姿勢をとった");
+            await DoEnemyTurnAsync();
         }
 
-        private void DoFlee()
+        private async UniTaskVoid DoFleeAsync()
         {
             SetPhase(BattlePhase.PlayerAction);
             if (UnityEngine.Random.value > 0.5f)
             {
-                EndBattle("うまく逃げ切れた！", BattleResult.Fled);
+                await EndBattleAsync("うまく逃げ切れた！", BattleResult.Fled);
             }
             else
             {
-                ShowMessage("逃げられなかった！", () => DoEnemyTurn());
+                await ShowMessageAsync("逃げられなかった！");
+                await DoEnemyTurnAsync();
             }
         }
 
@@ -149,15 +154,13 @@ namespace FlipLogic.Battle
         {
             if (_activeRule == null)
             {
-                ShowMessage("ルールブックを開いた…（空白のページだ）",
-                    () => SetPhase(BattlePhase.PlayerCommand));
+                ShowMessageAsync("ルールブックを開いた…（空白のページだ）").ContinueWith(() => SetPhase(BattlePhase.PlayerCommand)).Forget();
                 return;
             }
 
             if (_hasUsedRulebook)
             {
-                ShowMessage("もうルールブックは使えない…",
-                    () => SetPhase(BattlePhase.PlayerCommand));
+                ShowMessageAsync("もうルールブックは使えない…").ContinueWith(() => SetPhase(BattlePhase.PlayerCommand)).Forget();
                 return;
             }
 
@@ -170,22 +173,25 @@ namespace FlipLogic.Battle
 
         private void OnRuleHackComplete()
         {
-            string proposition = Logic.LogicEvaluator.FormatCurrentProposition(_activeRule);
-
-            _showHackResult = true; // ルール改変直後フラグ
-
-            ShowMessage(
-                $"ルールを改変した…\n「{proposition}」\n世界の法則が設定された",
-                () => DoEnemyTurn());
+            OnRuleHackCompleteAsync().Forget();
         }
 
-        private void DoEnemyTurn()
+        private async UniTaskVoid OnRuleHackCompleteAsync()
+        {
+            string proposition = Logic.LogicEvaluator.FormatCurrentProposition(_activeRule);
+            _showHackResult = true; // ルール改変直後フラグ
+
+            await ShowMessageAsync($"ルールを改変した…\n「{proposition}」\n世界の法則が設定された");
+            await DoEnemyTurnAsync();
+        }
+
+        private async UniTask DoEnemyTurnAsync()
         {
             SetPhase(BattlePhase.EnemyTurn);
 
             if (!_enemyEntity.IsAlive)
             {
-                EndBattle($"{_enemyEntity.EntityName}を倒した！", BattleResult.Victory);
+                await EndBattleAsync($"{_enemyEntity.EntityName}を倒した！", BattleResult.Victory);
                 return;
             }
 
@@ -200,27 +206,23 @@ namespace FlipLogic.Battle
 
             if (!_playerEntity.IsAlive)
             {
-                EndBattle(msg + "\n\n力尽きた…", BattleResult.Defeat);
+                await EndBattleAsync(msg + "\n\n力尽きた…", BattleResult.Defeat);
             }
             else
             {
-                ShowMessage(msg, () => DoTurnEnd());
+                await ShowMessageAsync(msg);
+                await DoTurnEndAsync();
             }
         }
 
-        private void DoTurnEnd()
+        private async UniTask DoTurnEndAsync()
         {
             SetPhase(BattlePhase.TurnEnd);
 
             float preHp = _enemyEntity.Hp;
 
-            // ターン終了時のルール・タグ評価
-            var results = Logic.RuleEvaluator.Instance?.EvaluateAll();
-            Core.TagBehaviorRunner.Instance?.ExecuteTurnEndBehaviors();
-
-            _playerEntity.Tags.TickDurations();
-            _enemyEntity.Tags.TickDurations();
-            Grid.GridMap.Instance?.TickAllCellTags();
+            // ターン終了時の共通処理（ルール評価・タグ期限更新）
+            var results = await TurnResolutionProcessor.ExecuteAsync();
 
             // 評価後に敵が死んだ場合（即死ルールなどの影響）
             if (preHp > 0 && !_enemyEntity.IsAlive)
@@ -243,13 +245,14 @@ namespace FlipLogic.Battle
                     ? $"{ruleName} により、\n氷スライムは死んだ！"
                     : $"{ruleName} の影響により、\n{_enemyEntity.EntityName}は力尽きた！";
                 
-                ShowMessage(msg, () => { EndBattle($"{_enemyEntity.EntityName}を倒した！", BattleResult.Victory); });
+                await ShowMessageAsync(msg);
+                await EndBattleAsync($"{_enemyEntity.EntityName}を倒した！", BattleResult.Victory);
                 return;
             }
 
             if (!_playerEntity.IsAlive)
             {
-                EndBattle("力尽きた…", BattleResult.Defeat);
+                await EndBattleAsync("力尽きた…", BattleResult.Defeat);
                 return;
             }
 
@@ -257,10 +260,8 @@ namespace FlipLogic.Battle
             if (IsTutorialBattle && _showHackResult && _enemyEntity.IsAlive)
             {
                 _showHackResult = false;
-                ShowMessage("ルール改変の結果、\n氷スライムは生き延びた！", () =>
-                {
-                    SetPhase(BattlePhase.PlayerCommand);
-                });
+                await ShowMessageAsync("ルール改変の結果、\n氷スライムは生き延びた！");
+                SetPhase(BattlePhase.PlayerCommand);
                 return;
             }
 
@@ -268,17 +269,16 @@ namespace FlipLogic.Battle
             SetPhase(BattlePhase.PlayerCommand);
         }
 
-        private void EndBattle(string msg, BattleResult result)
+        private async UniTask EndBattleAsync(string msg, BattleResult result)
         {
             SetPhase(BattlePhase.BattleResult);
-            ShowMessage(msg, () =>
-            {
-                _isInBattle = false;
-                SetPhase(BattlePhase.End);
-                if (_uiController != null)
-                    _uiController.gameObject.SetActive(false);
-                OnBattleEnd?.Invoke(result);
-            });
+            await ShowMessageAsync(msg);
+            
+            _isInBattle = false;
+            SetPhase(BattlePhase.End);
+            if (_uiController != null)
+                _uiController.gameObject.SetActive(false);
+            OnBattleEnd?.Invoke(result);
         }
 
         private void SetPhase(BattlePhase phase)
@@ -288,17 +288,25 @@ namespace FlipLogic.Battle
                 _uiController.OnPhaseChanged(phase);
         }
 
-        private void ShowMessage(string message, Action onComplete)
+        private async UniTask ShowMessageAsync(string message)
         {
             if (_uiController != null)
             {
-                _uiController.ShowMessage(message, onComplete);
+                bool isCompleted = false;
+                _uiController.ShowMessage(message, () => isCompleted = true);
+                await UniTask.WaitUntil(() => isCompleted);
             }
             else
             {
                 Debug.Log($"[Battle] {message}");
-                onComplete?.Invoke();
+                await UniTask.Yield();
             }
+        }
+
+        // 古い互換性用（一部外部から呼ばれる可能性を考慮）
+        private void ShowMessage(string message, Action onComplete)
+        {
+            ShowMessageAsync(message).ContinueWith(onComplete).Forget();
         }
     }
 }

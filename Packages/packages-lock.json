@@ -10,6 +10,13 @@
       },
       "hash": "b2d95d2638063e7bb36025df64bf02a9eba8a7c8"
     },
+    "com.cysharp.unitask": {
+      "version": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "a9e27c03d411d2fca01cc7410c24c97cd77cb539"
+    },
     "com.unity.collab-proxy": {
       "version": "2.11.4",
       "depth": 0,

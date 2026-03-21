@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Linq;
 using FlipLogic.Core;
 using FlipLogic.Grid;
 
@@ -26,7 +27,8 @@ namespace FlipLogic.Explore
             if (Battle.BattleManager.Instance == null) return;
             if (Battle.BattleManager.Instance.IsInBattle) return;
 
-            var player = GameManager.Instance?.PlayerEntity;
+            // GameManagerのキャッシュが空の場合に備え、レジストリから直接取得する
+            var player = EntityRegistry.Instance?.GetEntities(EntityType.Player).FirstOrDefault();
             if (player == null) return;
 
             // 隣接4マスとプレイヤー位置をチェック（EntityRegistry経由）

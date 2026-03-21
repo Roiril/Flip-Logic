@@ -181,6 +181,8 @@ namespace FlipLogic.Tutorial
                 new ScenarioStep { StepId = "death_warning", Trigger = ScenarioTrigger.Immediate, WaitClickAfterAction = true, Action = ScenarioAction.ShowMessage, ActionParam = "氷スライムは火に弱いので\n即死してしまいます" },
                 // 6. メッセージ非表示
                 new ScenarioStep { StepId = "hide_warning", Trigger = ScenarioTrigger.Immediate, Action = ScenarioAction.HideMessage },
+                // 6.5 ルール強制解決
+                new ScenarioStep { StepId = "resolve_status", Trigger = ScenarioTrigger.Immediate, Action = ScenarioAction.ResolveTurn },
                 // 7. 移動許可
                 new ScenarioStep { StepId = "allow_move", Trigger = ScenarioTrigger.Immediate, Action = ScenarioAction.AllowMovement },
                 // 8. スライム死亡を検知

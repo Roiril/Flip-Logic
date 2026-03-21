@@ -37,33 +37,38 @@
   - `GridMap._entityMap` に代わる位置やタグベースのエンティティ高速検索APIの提供。
   - `EntityType.Terrain` の見直し (HP/Attackなど余分なフィールドを持たないようにする)。
 
-### Issue 4: エンティティおよびステージのデータ（SO）活用化
+### [DONE] Issue 4: エンティティおよびステージのデータ（SO）活用化
+- **状態**: 完了 (2026-03-21)
 - **目的**: `EnemyData` などの未活用SOを活かし、ステージと敵を一括ロードできるようにする。
 - **タスク**:
-  - `EntityFactory` の実装 (`EnemyData` と座標から `GameEntity` を動的生成)。
-  - `StageData` (ScriptableObject) の作成 (マップサイズ、壁配置、初期セルタグ、敵配置、ルール設定)。
-  - `StageLoader` の実装 (指定された `StageData` に基づきマップや敵、ルールの初期化を一括実行)。
-  - 不要になったハードコード（`TutorialSetup` や `ProceduralMapGenerator` のハードコード部分）の削除。
+  - [x] `EntityFactory` の実装 (`EnemyData` と座標から `GameEntity` を動的生成)。
+  - [x] `StageConfig` (ScriptableObject) の作成 (メタ情報)。
+  - [x] Scene上の `EnemySpawner` / `CellTagSetter` による配置。
+  - [x] `Player.prefab` の動的生成と `CameraFollow` 追従 (Issue 4.5)。
+  - [x] 不要になったシーン上の `PlayerObj`, `EnemySymbolObj` の削除。
 
 ---
 
 ## 優先度 (P2) ビジュアルと UI アーキテクチャ
 
-### Issue 5: ビジュアル定義の SO 化
+### [DONE] Issue 5: ビジュアル定義の SO 化
+- **状態**: 完了 (2026-03-21)
 - **目的**: 色やスプライトのハードコードを排除し、アーティストが変更容易にする。
 - **タスク**:
-  - `EntityVisualDef` (ScriptableObject) の作成 (P/Eなどの文字出力コードから、スプライトアセット参照への移行)。
-  - `TileVisualDef` (ScriptableObject) の作成 (Fire=オレンジ などの属性カラーやパターンのマッピング)。
-  - `UITheme` (ScriptableObject) の作成 (バトルUI定数、特に Legacy Text から TextMeshPro への移行も視野に)。
-  - 各 Renderer/Generator との結びつけ。
+  - [x] `EntityVisualDef` (ScriptableObject) の作成。
+  - [x] `TileVisualDef` (ScriptableObject) の作成。
+  - [x] `UITheme` (ScriptableObject) の作成。
+  - [x] 各 Renderer/Generator との結びつけ。
+  - [x] 実行時の自動デフォルトアセットロード機能の実装。
 
-### Issue 6: ターン制処理機構のモダン化
+### [DONE] Issue 6: ターン制処理機構のモダン化
+- **状態**: 完了 (2026-03-21)
 - **目的**: バトルとフィールドの二重実装を解消し、演出を挟める非同期なフェーズ進行（Phase Pipeline）を構築。
 - **タスク**:
-  - `IPhaseHandler` と `TurnContext` の定義。
-  - `TurnManager` のフェーズ実行処理を非同期処理（UniTask等）へ置き換え。
-  - フィールド用フェーズ、バトル用フェーズのハンドラ実装。
-  - フェーズ間のイベント発行と解除の統一。
+  - [x] `IPhaseHandler` と `TurnContext` の定義。
+  - [x] `TurnManager` のフェーズ実行処理を非同期処理（UniTask等）へ置き換え。
+  - [x] フィールド用フェーズ、バトル用フェーズのハンドラ実装。
+  - [x] フェーズ間のイベント発行と解除の統一。
 
 ---
 

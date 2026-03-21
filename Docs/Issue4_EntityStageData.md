@@ -1,4 +1,4 @@
-# Issue 4: エンティティ生成のデータ駆動化とステージ構成のハイブリッド化
+# [COMPLETED] Issue 4: エンティティ生成のデータ駆動化とステージ構成のハイブリッド化
 
 ### タイトル
 `refactor: エンティティ生成のデータ駆動化とステージ構成のハイブリッド化`
@@ -46,8 +46,8 @@
 | [修正] | `Assets/Scripts/Explore/EncounterTrigger.cs` | FindObjectsByType排除 |
 
 ## 確認事項 (Acceptance Criteria)
-- [ ] `EntityFactory.Create(enemyData, gridPos)` で敵が正しく生成され、ステータスとタグが `EnemyData` と一致すること。
-- [ ] `EnemySpawner` をScene上に配置し再生すると、指定位置に敵が出現すること。
-- [ ] `CellTagSetter` をScene上に配置し再生すると、その座標のセルにタグが付与されること。
-- [ ] `FindObjectsByType` がスクリプト内から完全に排除されていること。
-- [ ] 既存のチュートリアルフローが破綻しないこと。
+- [x] `EntityFactory.Create(enemyData, gridPos)` で敵が正しく生成され、ステータスとタグが `EnemyData` と一致すること。
+- [x] `EnemySpawner` をScene上に配置し再生すると、指定位置に敵が出現すること。
+- [x] `CellTagSetter` をScene上に配置し再生すると、その座標のセルにタグが付与されること。
+- [x] `FindObjectsByType` がスクリプト内から完全に排除されていること。
+- [x] 既存のチュートリアルフローが破綻しないこと。

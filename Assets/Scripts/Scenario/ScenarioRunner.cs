@@ -4,6 +4,7 @@ using UnityEngine;
 using FlipLogic.Core;
 using FlipLogic.Grid;
 using FlipLogic.Explore;
+using Cysharp.Threading.Tasks;
 
 namespace FlipLogic.Scenario
 {
@@ -128,6 +129,7 @@ namespace FlipLogic.Scenario
                 case ScenarioAction.BlockMovement:   _movementBlocked = true; break;
                 case ScenarioAction.AddTileTag:      DoAddTileTag(step.ActionParam, step.ActionParam2); break;
                 case ScenarioAction.ForceMoveEntity: DoForceMove(step.ActionParam); break;
+                case ScenarioAction.ResolveTurn:     DoResolveTurn().Forget(); break;
                 case ScenarioAction.EndScenario:     Finish(); return;
             }
 
@@ -247,6 +249,11 @@ namespace FlipLogic.Scenario
                     break;
                 }
             }
+        }
+
+        private async UniTaskVoid DoResolveTurn()
+        {
+            await TurnResolutionProcessor.ExecuteAsync();
         }
 
         private void CheckEntityOnTile(ScenarioStep step)

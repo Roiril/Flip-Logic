@@ -97,7 +97,7 @@ namespace FlipLogic.Explore
             _isMoving = true;
 
             // 1ターン消費
-            TurnManager.Instance.OnPlayerAction();
+            TurnManager.Instance.OnPlayerActionAsync().Forget();
         }
     }
 }
