@@ -40,14 +40,11 @@ namespace FlipLogic.Explore
                 var diff = entity.GridPosition - player.GridPosition;
                 int dist = Mathf.Abs(diff.x) + Mathf.Abs(diff.y);
 
-                if (dist <= 1)
+                if (dist == 0)
                 {
                     // 隣接 or 同一マス → バトル開始
-                    var rule = GameManager.Instance.RulebookData?.GetActiveRules()?.Count > 0
-                        ? GameManager.Instance.RulebookData.GetActiveRules()[0]
-                        : null;
                     bool isTutorial = entity.EntityName != null && entity.EntityName.StartsWith("IceSlime");
-                    Battle.BattleManager.Instance.StartBattle(player, entity, rule, isTutorial);
+                    Battle.BattleManager.Instance.StartBattle(player, entity, isTutorial);
                     break;
                 }
             }

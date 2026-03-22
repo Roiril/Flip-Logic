@@ -169,5 +169,19 @@ namespace FlipLogic.Grid
         {
             GetCellTags(pos).RemoveTag(key, value);
         }
-}
+
+        /// <summary>特定のタグを持つすべてのタイルの座標を取得する。</summary>
+        public List<Vector2Int> FindTilesWithTag(string key, string value)
+        {
+            var results = new List<Vector2Int>();
+            foreach (var kvp in _cellTags)
+            {
+                if (kvp.Value.HasTag(key, value))
+                {
+                    results.Add(kvp.Key);
+                }
+            }
+            return results;
+        }
+    }
 }

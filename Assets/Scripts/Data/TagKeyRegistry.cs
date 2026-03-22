@@ -45,6 +45,7 @@ namespace FlipLogic.Data
         /// </summary>
         public bool IsValid(string key, string value)
         {
+            if (string.IsNullOrEmpty(key)) return true; // フィルタなし等を許容する
             var entry = _entries.Find(e => e.Key == key);
             if (entry == null) return false;
             if (entry.AllowedValues.Count == 0) return true; // 空の場合は任意の値（EncounterMsgなど）を許容

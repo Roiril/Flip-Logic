@@ -85,7 +85,7 @@ namespace FlipLogic.Logic
                 foreach (var entity in entities)
                 {
                     // 主語フィルタ（SubjectFilterP）がある場合、それに合致しないエンティティは無視する
-                    if (rule.SubjectFilterP != null)
+                    if (rule.SubjectFilterP != null && !string.IsNullOrEmpty(rule.SubjectFilterP.Key))
                     {
                         Core.TagContainer subjectTags = GetTargetTags(entity, rule.SubjectFilterP.Target);
                         if (subjectTags == null || !rule.SubjectFilterP.Evaluate(subjectTags, false))
@@ -114,7 +114,33 @@ namespace FlipLogic.Logic
                         Core.TagContainer effectTags = GetTargetTags(entity, effect.Target);
                         if (effectTags != null)
                         {
-                            effect.Apply(effectTags, resultNegated, $"Rule:{rule.RuleId}");
+                            if (effect.IsMoveToNearest)
+                            {
+                                // 最寄りの該当タイルを探して移動
+                                var targetTiles = Grid.GridMap.Instance.FindTilesWithTag(effect.Key, effect.Value);
+                                if (targetTiles.Any())
+                                {
+                                    Vector2Int nearest = targetTiles.OrderBy(t => Vector2Int.Distance(entity.GridPosition, t)).First();
+
+                                    // ビジュアル・論理位置の更新
+                                    if (entity.TryGetComponent<Explore.EnemySymbol>(out var enemySymbol))
+                                    {
+                                        enemySymbol.ForceMoveTo(nearest);
+                                    }
+                                    else
+                                    {
+                                        entity.GridPosition = nearest;
+                                        Grid.GridMap.Instance.RegisterEntity(entity, nearest);
+                                        entity.SyncWorldPosition();
+                                    }
+                                    
+                                    Debug.Log($"[RuleEvaluator] {entity.EntityName} moved to {nearest} due to rule {rule.RuleId}");
+                                }
+                            }
+                            else
+                            {
+                                effect.Apply(effectTags, resultNegated, $"Rule:{rule.RuleId}");
+                            }
 
                             // マスの属性が変化した場合、UI（オーバーレイ）を更新する
                             if (effect.Target == RuleTarget.TileOfEntity && Grid.TileOverlayRenderer.Instance != null)

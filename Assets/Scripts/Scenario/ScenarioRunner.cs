@@ -130,6 +130,7 @@ namespace FlipLogic.Scenario
                 case ScenarioAction.AddTileTag:      DoAddTileTag(step.ActionParam, step.ActionParam2); break;
                 case ScenarioAction.ForceMoveEntity: DoForceMove(step.ActionParam); break;
                 case ScenarioAction.ResolveTurn:     DoResolveTurn().Forget(); break;
+                case ScenarioAction.SpawnRuleBoard:  DoSpawnRuleBoard(step.ActionParam); break;
                 case ScenarioAction.EndScenario:     Finish(); return;
             }
 
@@ -254,6 +255,23 @@ namespace FlipLogic.Scenario
         private async UniTaskVoid DoResolveTurn()
         {
             await TurnResolutionProcessor.ExecuteAsync();
+        }
+
+        private void DoSpawnRuleBoard(string posStr)
+        {
+            // TutorialSetupのSpawnRuleBoardを呼び出すか、ここ自体にロジックを実装する
+            // チュートリアル固有の処理なので、TutorialSetupから実行するのが望ましい
+            var tutorial = FindAnyObjectByType<Tutorial.TutorialSetup>();
+            if (tutorial != null)
+            {
+                var pos = ParseV2I(posStr);
+                if (pos.HasValue)
+                {
+                    // TutorialSetup側にpublicなSpawnRuleBoardがある前提
+                    var method = tutorial.GetType().GetMethod("SpawnRuleBoard", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                    if (method != null) method.Invoke(tutorial, new object[] { pos.Value });
+                }
+            }
         }
 
         private void CheckEntityOnTile(ScenarioStep step)

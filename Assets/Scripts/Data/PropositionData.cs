@@ -63,6 +63,7 @@ namespace FlipLogic.Data
         public PropositionData Condition; // P
         public PropositionData Result;    // Q
         public bool IsSwapped;           // PとQが入れ替わっているか
+        public bool IsSwappable = true; // PとQを入れ替え可能か
 
         // --- Subject Filter ---
         /// <summary>このルールが適用されるエンティティの条件（例：氷属性を持つ対象のみ）。</summary>
@@ -156,10 +157,11 @@ namespace FlipLogic.Data
         {
             return new TagEffect
             {
-                Key = condition.Key,
-                Value = condition.Value,
+                Key = string.IsNullOrEmpty(condition.MoveTargetKey) ? condition.Key : condition.MoveTargetKey,
+                Value = string.IsNullOrEmpty(condition.MoveTargetValue) ? condition.Value : condition.MoveTargetValue,
                 Operation = condition.RequirePresence ? TagOperation.Add : TagOperation.Remove,
-                Target = condition.Target
+                Target = condition.Target,
+                IsMoveToNearest = condition.MoveToNearestIfSwapped
             };
         }
     }
@@ -174,6 +176,9 @@ namespace FlipLogic.Data
         public string Key;
         public string Value;
         public bool RequirePresence = true; // trueなら「存在する」、falseなら「存在しない」
+        public bool MoveToNearestIfSwapped = false; // スワップ時に「そのタグを持つ最寄りのタイルへ移動」とするか
+        public string MoveTargetKey = ""; // スワップ時の移動先タグのKey（空なら元のKeyを使用）
+        public string MoveTargetValue = ""; // スワップ時の移動先タグのValue（空なら元のValueを使用）
 
         public TagCondition() { }
 
@@ -217,6 +222,7 @@ namespace FlipLogic.Data
         public TagOperation Operation;
         public int Duration = -1;
         public string BehaviorId = "";
+        public bool IsMoveToNearest = false; // 最寄りの該当タイルへ強制移動するか
 
         public TagEffect() { }
 

@@ -60,6 +60,7 @@ namespace FlipLogic.Scenario
         WaitTurns,       // 指定ターン数待機（ActionParam = ターン数）
         EndScenario,     // シナリオ終了
         ForceMoveEntity, // エンティティを強制移動（ActionParam = "エンティティ名;x,y"）
-        ResolveTurn      // ターン終了処理（タグ・ルール評価）を発動
+        ResolveTurn,     // ターン終了処理（タグ・ルール評価）を発動
+        SpawnRuleBoard   // ルールボードをスポーン（ActionParam = "x,y"）
     }
 }

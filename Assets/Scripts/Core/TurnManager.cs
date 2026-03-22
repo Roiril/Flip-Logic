@@ -51,7 +51,7 @@ namespace FlipLogic.Core
         /// プレイヤーがアクション（移動 or コマンド）を実行した時に呼ぶ。
         /// 1ターンの進行サイクルを開始する。
         /// </summary>
-        public async UniTaskVoid OnPlayerActionAsync()
+        public async UniTask OnPlayerActionAsync()
         {
             if (CurrentPhase != TurnPhase.WaitingForInput) return;
 
@@ -61,23 +61,11 @@ namespace FlipLogic.Core
 
             OnPlayerActionComplete?.Invoke();
 
-            // バトルが発生した場合は、バトル終了までフィールドのターン進行を一時停止する
-            if (Battle.BattleManager.Instance != null && Battle.BattleManager.Instance.IsInBattle)
-            {
-                await UniTask.WaitWhile(() => Battle.BattleManager.Instance.IsInBattle);
-            }
-
             CurrentPhase = TurnPhase.EnemyAction;
             OnEnemyPhase?.Invoke();
 
             // アニメーション用の簡易待機（エンティティが移動を終える猶予）
             await UniTask.Delay(TimeSpan.FromSeconds(0.2f));
-
-            // もし敵の行動によってバトルなどが発生した場合の念のための待機
-            if (Battle.BattleManager.Instance != null && Battle.BattleManager.Instance.IsInBattle)
-            {
-                await UniTask.WaitWhile(() => Battle.BattleManager.Instance.IsInBattle);
-            }
 
             CurrentPhase = TurnPhase.RuleEvaluation;
             

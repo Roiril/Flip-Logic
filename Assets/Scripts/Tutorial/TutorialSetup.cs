@@ -21,7 +21,7 @@ namespace FlipLogic.Tutorial
         [SerializeField] private EnemyData _iceSlimeData;
 
         [Header("Tutorial Settings")]
-        [SerializeField] private Vector2Int _enemySpawnPos = new Vector2Int(5, 3);
+        [SerializeField] private Vector2Int _enemySpawnPos = new Vector2Int(6, 2);
         [SerializeField] private bool _showTutorial = true;
         [SerializeField] private Data.UITheme _uiTheme;
 
@@ -100,6 +100,38 @@ namespace FlipLogic.Tutorial
             {
                 new GameObject("TagBehaviorRunner").AddComponent<TagBehaviorRunner>();
             }
+
+            // ルールボードUIジェネレーターがない場合は生成（念のため）
+            if (FindAnyObjectByType<Explore.RuleBoardUIGenerator>() == null)
+            {
+                new GameObject("RuleBoardUIGeneratorObj").AddComponent<Explore.RuleBoardUIGenerator>();
+            }
+        }
+
+        private void SpawnRuleBoard(Vector2Int gridPos)
+        {
+            var go = new GameObject($"RuleBoard_{gridPos}");
+            var interactable = go.AddComponent<Explore.RuleBoardInteractable>();
+            
+            // 下地としてのGameEntity初期化はInteractable.Initialize内で行われる
+            interactable.Initialize(gridPos);
+
+            // 見た目の設定 (MapPlacementSpawnerのロジックに合わせる)
+            var sprite = go.AddComponent<SpriteRenderer>();
+            sprite.color = new Color(0.6f, 0.4f, 0.2f); // 茶色
+            sprite.sortingOrder = 5;
+            
+            Texture2D tex = new Texture2D(1, 1);
+            tex.SetPixel(0, 0, Color.white);
+            tex.Apply();
+            sprite.sprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
+            
+            // Collider
+            var col = go.AddComponent<BoxCollider2D>();
+            col.isTrigger = true;
+            col.size = Vector2.one * 0.8f;
+
+            Debug.Log($"[Tutorial] RuleBoard spawned at {gridPos}");
         }
 
         private void SetupTileOverlays()
@@ -195,8 +227,11 @@ namespace FlipLogic.Tutorial
                 new ScenarioStep { StepId = "go_fight", Trigger = ScenarioTrigger.Immediate, WaitClickAfterAction = true, Action = ScenarioAction.ShowMessage, ActionParam = "近づいて戦ってみましょう" },
                 // 12. ルール操作の説明
                 new ScenarioStep { StepId = "rule_power", Trigger = ScenarioTrigger.Immediate, WaitClickAfterAction = true, Action = ScenarioAction.ShowMessage, ActionParam = "おっと言い忘れてました。\nあなたにはルールを操るという\n特別な力を与えておきましたよ" },
+                // 12.5 ルールボード出現
+                new ScenarioStep { StepId = "spawn_board", Trigger = ScenarioTrigger.Immediate, Action = ScenarioAction.SpawnRuleBoard, ActionParam = "3,2" },
                 // 13. シナリオ終了
-                new ScenarioStep { StepId = "end", Trigger = ScenarioTrigger.Immediate, Action = ScenarioAction.EndScenario },
+                new ScenarioStep { StepId = "end", Trigger = ScenarioTrigger.Immediate, Action = ScenarioAction.ShowMessage, ActionParam = "右上の掲示板（ルールボード）を調べて、\n世界を変えてみてください！" },
+                new ScenarioStep { StepId = "finish", Trigger = ScenarioTrigger.Click, Action = ScenarioAction.EndScenario },
             };
         }
 

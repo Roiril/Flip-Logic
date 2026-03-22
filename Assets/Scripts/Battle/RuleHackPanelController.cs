@@ -56,6 +56,7 @@ namespace FlipLogic.Battle
             {
                 _swapButton.onClick.RemoveAllListeners();
                 _swapButton.onClick.AddListener(SwapBlocks);
+                _swapButton.interactable = _rule.IsSwappable;
             }
 
             UpdateDisplay();

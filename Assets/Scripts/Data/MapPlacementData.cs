@@ -18,13 +18,20 @@ namespace FlipLogic.Data
         public Vector2Int GridPosition;
     }
 
+    [System.Serializable]
+    public class RuleBoardPlacement
+    {
+        public Vector2Int GridPosition;
+    }
+
     /// <summary>
-    /// ステージの初期配置データ（敵、セルギミック）を保持するScriptableObject。
+    /// ステージの初期配置データ（敵、セルギミック、ルールボード）を保持するScriptableObject。
     /// </summary>
     [CreateAssetMenu(fileName = "NewMapPlacementData", menuName = "FlipLogic/Map Placement Data")]
     public class MapPlacementData : ScriptableObject
     {
         public List<EnemyPlacement> Enemies = new List<EnemyPlacement>();
         public List<CellTagPlacement> CellTags = new List<CellTagPlacement>();
+        public List<RuleBoardPlacement> RuleBoards = new List<RuleBoardPlacement>();
     }
 }

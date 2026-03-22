@@ -142,13 +142,13 @@ namespace FlipLogic.Grid
             if (tags.HasTag("Element", "Fire"))
                 return new Data.TileVisualMapping { OverlayColor = new Color(1f, 0.55f, 0.1f, 0.6f) };
             if (tags.HasTag("Element", "Poison"))
-                return new Data.TileVisualMapping { OverlayColor = new Color(0.6f, 0.15f, 0.8f, 0.6f) };
+                return new Data.TileVisualMapping { OverlayColor = new Color(0.5f, 0.0f, 0.7f, 0.7f), UseCustomSprite = false }; // 毒々しい紫
             if (tags.HasTag("Element", "Ice"))
                 return new Data.TileVisualMapping { OverlayColor = new Color(0.4f, 0.8f, 1.0f, 0.6f) };
             return null;
         }
 
-        /// <summary>斜め交差格子パターンのスプライトを生成する。</summary>
+        /// <summary>属性タグに応じたパターンを生成する。</summary>
         private Sprite GetOrCreatePattern(Color color)
         {
             string key = $"{color.r:F2}_{color.g:F2}_{color.b:F2}";
@@ -158,28 +158,16 @@ namespace FlipLogic.Grid
             var tex = new Texture2D(TexSize, TexSize, TextureFormat.RGBA32, false);
             var pixels = new Color[TexSize * TexSize];
 
-            // 背景を半透明の暗い色に
-            Color bg = new Color(color.r * 0.3f, color.g * 0.3f, color.b * 0.3f, 0.25f);
-            for (int i = 0; i < pixels.Length; i++)
-                pixels[i] = bg;
+            // 毒（紫）の場合は泡、その他は格子
+            bool isPoison = color.r > 0.4f && color.b > 0.6f && color.g < 0.3f;
 
-            // 斜め交差格子を描画
-            int spacing = 5;
-            int lineWidth = 1;
-            for (int y = 0; y < TexSize; y++)
+            if (isPoison)
             {
-                for (int x = 0; x < TexSize; x++)
-                {
-                    // 右上がり斜線
-                    bool diag1 = ((x + y) % spacing) < lineWidth;
-                    // 右下がり斜線
-                    bool diag2 = ((x - y + TexSize * spacing) % spacing) < lineWidth;
-
-                    if (diag1 || diag2)
-                    {
-                        pixels[y * TexSize + x] = color;
-                    }
-                }
+                GeneratePoisonPattern(pixels, color);
+            }
+            else
+            {
+                GenerateGridPattern(pixels, color);
             }
 
             tex.SetPixels(pixels);
@@ -190,6 +178,54 @@ namespace FlipLogic.Grid
             var sprite = Sprite.Create(tex, new Rect(0, 0, TexSize, TexSize), new Vector2(0.5f, 0.5f), TexSize);
             _patternCache[key] = sprite;
             return sprite;
+        }
+
+        private void GeneratePoisonPattern(Color[] pixels, Color color)
+        {
+            Color bg = new Color(color.r * 0.2f, color.g * 0.2f, color.b * 0.2f, 0.4f);
+            for (int i = 0; i < pixels.Length; i++) pixels[i] = bg;
+
+            // 泡（ドット）をランダムに配置
+            Random.InitState(color.GetHashCode());
+            for (int i = 0; i < 8; i++)
+            {
+                int cx = Random.Range(0, TexSize);
+                int cy = Random.Range(0, TexSize);
+                int radius = Random.Range(1, 4);
+                Color bubbleColor = color * (1.0f + Random.Range(0.1f, 0.3f));
+                bubbleColor.a = 0.8f;
+
+                for (int y = -radius; y <= radius; y++)
+                {
+                    for (int x = -radius; x <= radius; x++)
+                    {
+                        if (x * x + y * y <= radius * radius)
+                        {
+                            int px = (cx + x + TexSize) % TexSize;
+                            int py = (cy + y + TexSize) % TexSize;
+                            pixels[py * TexSize + px] = bubbleColor;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void GenerateGridPattern(Color[] pixels, Color color)
+        {
+            Color bg = new Color(color.r * 0.3f, color.g * 0.3f, color.b * 0.3f, 0.25f);
+            for (int i = 0; i < pixels.Length; i++) pixels[i] = bg;
+
+            int spacing = 5;
+            int lineWidth = 1;
+            for (int y = 0; y < TexSize; y++)
+            {
+                for (int x = 0; x < TexSize; x++)
+                {
+                    bool diag1 = ((x + y) % spacing) < lineWidth;
+                    bool diag2 = ((x - y + TexSize * spacing) % spacing) < lineWidth;
+                    if (diag1 || diag2) pixels[y * TexSize + x] = color;
+                }
+            }
         }
     }
 }

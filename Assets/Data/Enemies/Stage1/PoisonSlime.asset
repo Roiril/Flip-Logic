@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf1c56ec48f014349963d258abece7e4, type: 3}
+  m_Name: PoisonSlime
+  m_EditorClassIdentifier: 
+  EnemyName: PoisonSlime
+  Description: 
+  VisualDef: {fileID: 11400000, guid: abd11369020d54c4c8db57d44a4ba974, type: 2}
+  MaxHp: 15
+  Attack: 3
+  Defense: 2
+  InitialTags:
+  - Key: Element
+    Value: Poison
+    Duration: -1
+    Source: Self
+    BehaviorId: 
+  AIType: 0
+  RelatedRuleId: 
+  EncounterMessage: 
+  DefeatMessage: 

@@ -13,7 +13,6 @@ namespace FlipLogic.Battle
         Attack,         // たたかう → [Damage:Physical] タグ付与
         Defend,         // ぼうぎょ → [Status:Defending] タグ付与
         UseItem,        // アイテム → アイテムのタグリストを対象に付与
-        OpenRulebook,   // ルールブック → ルール改変UIを開く
         Flee,           // にげる
     }
 
@@ -78,7 +77,6 @@ namespace FlipLogic.Battle
         PlayerCommand,
         PlayerAction,
         EnemyTurn,
-        RuleHack,
         TurnEnd,
         BattleResult,
         End,

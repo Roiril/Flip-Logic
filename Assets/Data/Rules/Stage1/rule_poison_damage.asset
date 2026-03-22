@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2ed41826846a654bb893602b98b2a9e, type: 3}
+  m_Name: rule_poison_damage
+  m_EditorClassIdentifier: 
+  RuleId: rule_poison_damage
+  RuleName: "\u6BD2\u306E\u82E6\u3057\u307F"
+  Description: "\u6BD2\u72B6\u614B\u306E\u8005\u306F\u30C0\u30E1\u30FC\u30B8\u3092\u53D7\u3051\u308B"
+  Chapter: 1
+  IsActive: 1
+  IsSwappable: 1
+  Condition:
+    AffirmativeText: "\u6BD2\u72B6\u614B\u3067\u3042\u308B"
+    NegativeText: "\u6BD2\u72B6\u614B\u3067\u306F\u306A\u3044"
+    IsNegated: 0
+  Result:
+    AffirmativeText: "\u7D99\u7D9A\u30C0\u30E1\u30FC\u30B8\u3092\u304F\u3089\u3046"
+    NegativeText: "\u7D99\u7D9A\u30C0\u30E1\u30FC\u30B8\u3092\u304F\u3089\u308F\u306A\u3044"
+    IsNegated: 0
+  SubjectFilterP:
+    Target: 0
+    Key: 
+    Value: 
+    RequirePresence: 1
+    MoveToNearestIfSwapped: 0
+    MoveTargetKey: 
+    MoveTargetValue: 
+  TagConditionP:
+    Target: 0
+    Key: Status
+    Value: Poison
+    RequirePresence: 1
+    MoveToNearestIfSwapped: 1
+    MoveTargetKey: Element
+    MoveTargetValue: Poison
+  TagResultQ:
+    Target: 0
+    Key: Trigger
+    Value: Damage
+    Operation: 0
+    Duration: 1
+    BehaviorId: DamageTrigger
+    IsMoveToNearest: 0

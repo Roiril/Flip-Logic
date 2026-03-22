@@ -13,7 +13,7 @@ namespace FlipLogic.Rulebook
         public int Chapter = 1;
         public bool IsActive = true;
 
-        [Header("Propositions")]
+        public bool IsSwappable = true;
         public PropositionData Condition; // P
         public PropositionData Result;    // Q
 
@@ -36,6 +36,7 @@ namespace FlipLogic.Rulebook
                 Description = this.Description,
                 Chapter = this.Chapter,
                 IsActive = this.IsActive,
+                IsSwappable = this.IsSwappable,
                 // PropositionData は class なので Clone して渡す
                 Condition = this.Condition?.Clone(),
                 Result = this.Result?.Clone(),
@@ -52,7 +53,8 @@ namespace FlipLogic.Rulebook
                     Target = this.TagConditionP.Target,
                     Key = this.TagConditionP.Key,
                     Value = this.TagConditionP.Value,
-                    RequirePresence = this.TagConditionP.RequirePresence
+                    RequirePresence = this.TagConditionP.RequirePresence,
+                    MoveToNearestIfSwapped = this.TagConditionP.MoveToNearestIfSwapped
                 } : null,
                 TagResultQ = this.TagResultQ != null ? new TagEffect
                 {
@@ -61,7 +63,8 @@ namespace FlipLogic.Rulebook
                     Value = this.TagResultQ.Value,
                     Operation = this.TagResultQ.Operation,
                     Duration = this.TagResultQ.Duration,
-                    BehaviorId = this.TagResultQ.BehaviorId
+                    BehaviorId = this.TagResultQ.BehaviorId,
+                    IsMoveToNearest = this.TagResultQ.IsMoveToNearest
                 } : null
             };
         }

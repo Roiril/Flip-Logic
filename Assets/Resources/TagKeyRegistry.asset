@@ -28,5 +28,9 @@ MonoBehaviour:
     AllowedValues:
     - Defending
     - InstantDeath
+    - Poison
   - Key: EncounterMsg
     AllowedValues: []
+  - Key: Trigger
+    AllowedValues:
+    - Damage

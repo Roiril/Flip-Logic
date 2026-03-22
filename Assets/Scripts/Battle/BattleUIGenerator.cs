@@ -93,11 +93,8 @@ namespace FlipLogic.Battle
                 new Vector2(0.05f, 0.75f), new Vector2(0.95f, 0.95f),
                 Theme.AttackButtonColor);
             var defendBtn = CreateButton(cmdPanel.transform, "DefendBtn", "ぼうぎょ",
-                new Vector2(0.05f, 0.52f), new Vector2(0.95f, 0.72f),
+                new Vector2(0.05f, 0.40f), new Vector2(0.95f, 0.60f),
                 Theme.DefendButtonColor);
-            var rulebookBtn = CreateButton(cmdPanel.transform, "RulebookBtn", "ルールブック",
-                new Vector2(0.05f, 0.29f), new Vector2(0.95f, 0.49f),
-                Theme.RulebookButtonColor);
             var fleeBtn = CreateButton(cmdPanel.transform, "FleeBtn", "にげる",
                 new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.25f),
                 Theme.FleeButtonColor);
@@ -119,68 +116,6 @@ namespace FlipLogic.Battle
                 new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.45f),
                 "HP: 0/0", 16, Theme.PlayerHpTextColor);
 
-            // --- ルールハックパネル ---
-            var ruleHackPanel = CreatePanel(root.transform, "RuleHackPanel",
-                new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.95f),
-                Theme.RuleHackPanelColor);
-            ruleHackPanel.SetActive(false);
-            ruleHackPanel.AddComponent<RuleHackPanelController>();
-
-            // RuleHackPanel内部のUI
-            CreateText(ruleHackPanel.transform, "RHTitle",
-                new Vector2(0.05f, 0.88f), new Vector2(0.95f, 0.98f),
-                "RULE HACK", 22, Theme.RuleHackTitleColor);
-
-            // 命題ブロック: P (条件)
-            var pBlock = CreatePanel(ruleHackPanel.transform, "ConditionBlock",
-                new Vector2(0.1f, 0.58f), new Vector2(0.9f, 0.78f),
-                Theme.PropositionBlockColor);
-            pBlock.AddComponent<UI.PropositionBlock>();
-            var pText = CreateText(pBlock.transform, "ContentText",
-                new Vector2(0.1f, 0.1f), new Vector2(0.7f, 0.9f),
-                "P", 16, Theme.DefaultTextColor);
-            var pNegBtn = CreateButton(pBlock.transform, "NegateBtn", "否定",
-                new Vector2(0.72f, 0.15f), new Vector2(0.95f, 0.85f),
-                Theme.NegateButtonColor);
-
-            // 接続詞
-            CreateText(ruleHackPanel.transform, "Connector",
-                new Vector2(0.35f, 0.48f), new Vector2(0.65f, 0.58f),
-                "ならば", 18, Theme.RuleHackConnectorColor);
-
-            // 命題ブロック: Q (結果)
-            var qBlock = CreatePanel(ruleHackPanel.transform, "ResultBlock",
-                new Vector2(0.1f, 0.28f), new Vector2(0.9f, 0.48f),
-                Theme.PropositionBlockColor);
-            qBlock.AddComponent<UI.PropositionBlock>();
-            var qText = CreateText(qBlock.transform, "ContentText",
-                new Vector2(0.1f, 0.1f), new Vector2(0.7f, 0.9f),
-                "Q", 16, Theme.DefaultTextColor);
-            var qNegBtn = CreateButton(qBlock.transform, "NegateBtn", "否定",
-                new Vector2(0.72f, 0.15f), new Vector2(0.95f, 0.85f),
-                Theme.NegateButtonColor);
-
-            // 論理状態表示
-            var stateLabel = CreateText(ruleHackPanel.transform, "StateLabel",
-                new Vector2(0.1f, 0.18f), new Vector2(0.9f, 0.28f),
-                "", 14, Theme.RuleHackStateLabelColor);
-
-            // 命題プレビュー
-            var preview = CreateText(ruleHackPanel.transform, "Preview",
-                new Vector2(0.1f, 0.82f), new Vector2(0.9f, 0.88f),
-                "", 13, Theme.RuleHackPreviewColor);
-
-            // アクションボタン
-            var swapBtn = CreateButton(ruleHackPanel.transform, "SwapBtn", "入替",
-                new Vector2(0.1f, 0.05f), new Vector2(0.38f, 0.18f),
-                Theme.SwapButtonColor);
-            var resetBtn = CreateButton(ruleHackPanel.transform, "ResetBtn", "リセット",
-                new Vector2(0.4f, 0.05f), new Vector2(0.62f, 0.18f),
-                Theme.ResetButtonColor);
-            var confirmBtn = CreateButton(ruleHackPanel.transform, "ConfirmBtn", "決定",
-                new Vector2(0.64f, 0.05f), new Vector2(0.9f, 0.18f),
-                Theme.ConfirmButtonColor);
-
             // UIControllerにSerializeFieldを設定（Reflectionで直接）
             SetPrivateField(_uiController, "_messageText", msgText);
             SetPrivateField(_uiController, "_messagePanel", msgPanel);
@@ -188,44 +123,9 @@ namespace FlipLogic.Battle
             SetPrivateField(_uiController, "_attackButton", attackBtn.GetComponent<Button>());
             SetPrivateField(_uiController, "_defendButton", defendBtn.GetComponent<Button>());
             SetPrivateField(_uiController, "_fleeButton", fleeBtn.GetComponent<Button>());
-            SetPrivateField(_uiController, "_rulebookButton", rulebookBtn.GetComponent<Button>());
             SetPrivateField(_uiController, "_playerHpText", playerHpText);
             SetPrivateField(_uiController, "_enemyHpText", enemyHpText);
             SetPrivateField(_uiController, "_enemyNameText", enemyNameText);
-            SetPrivateField(_uiController, "_ruleHackPanel", ruleHackPanel);
-
-            // RuleHackPanelControllerにSerializeFieldを設定
-            var rhController = ruleHackPanel.GetComponent<RuleHackPanelController>();
-            if (rhController != null)
-            {
-                SetPrivateField(rhController, "_conditionBlock", pBlock.GetComponent<UI.PropositionBlock>());
-                SetPrivateField(rhController, "_resultBlock", qBlock.GetComponent<UI.PropositionBlock>());
-                SetPrivateField(rhController, "_connectorText", FindChildText(ruleHackPanel, "Connector"));
-                SetPrivateField(rhController, "_stateLabel", stateLabel);
-                SetPrivateField(rhController, "_confirmButton", confirmBtn.GetComponent<Button>());
-                SetPrivateField(rhController, "_resetButton", resetBtn.GetComponent<Button>());
-                SetPrivateField(rhController, "_swapButton", swapBtn.GetComponent<Button>());
-                SetPrivateField(rhController, "_propositionPreview", preview);
-            }
-
-            // PropositionBlockにSerializeFieldを設定
-            var pBlockComp = pBlock.GetComponent<UI.PropositionBlock>();
-            if (pBlockComp != null)
-            {
-                SetPrivateField(pBlockComp, "_contentText", pText);
-                SetPrivateField(pBlockComp, "_negateButton", pNegBtn.GetComponent<Button>());
-                SetPrivateField(pBlockComp, "_negateButtonText", pNegBtn.GetComponentInChildren<Text>());
-                SetPrivateField(pBlockComp, "_blockBackground", pBlock.GetComponent<Image>());
-            }
-
-            var qBlockComp = qBlock.GetComponent<UI.PropositionBlock>();
-            if (qBlockComp != null)
-            {
-                SetPrivateField(qBlockComp, "_contentText", qText);
-                SetPrivateField(qBlockComp, "_negateButton", qNegBtn.GetComponent<Button>());
-                SetPrivateField(qBlockComp, "_negateButtonText", qNegBtn.GetComponentInChildren<Text>());
-                SetPrivateField(qBlockComp, "_blockBackground", qBlock.GetComponent<Image>());
-            }
         }
 
         private Text FindChildText(GameObject parent, string name)

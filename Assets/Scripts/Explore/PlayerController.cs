@@ -1,6 +1,7 @@
 using UnityEngine;
 using FlipLogic.Core;
 using FlipLogic.Grid;
+using Cysharp.Threading.Tasks;
 
 namespace FlipLogic.Explore
 {
@@ -49,6 +50,23 @@ namespace FlipLogic.Explore
                 {
                     transform.position = _targetWorldPos;
                     _isMoving = false;
+
+                    // 移動完了時の自動インタラクト（接触イベント）
+                    if (GridMap.Instance != null)
+                    {
+                        var entities = GridMap.Instance.GetEntitiesAt(_entity.GridPosition);
+                        foreach (var e in entities)
+                        {
+                            if (e != _entity && e.TryGetComponent<IInteractable>(out var interactable))
+                            {
+                                if (interactable.CanInteract)
+                                {
+                                    interactable.OnInteract(_entity);
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
                 return;
             }
@@ -77,6 +95,31 @@ namespace FlipLogic.Explore
             if (dir != Vector2Int.zero)
             {
                 TryMove(dir);
+            }
+            else if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Z))
+            {
+                Interact();
+            }
+        }
+
+        private void Interact()
+        {
+            if (GridMap.Instance == null) return;
+
+            // 足元のエンティティをチェック
+            var entities = GridMap.Instance.GetEntitiesAt(_entity.GridPosition);
+            foreach (var e in entities)
+            {
+                if (e == _entity) continue; // 自分自身はスキップ
+
+                if (e.TryGetComponent<IInteractable>(out var interactable))
+                {
+                    if (interactable.CanInteract)
+                    {
+                        interactable.OnInteract(_entity);
+                        return;
+                    }
+                }
             }
         }
 

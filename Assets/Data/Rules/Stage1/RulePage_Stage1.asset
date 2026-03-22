@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59725576015463d47a152c82c7c82bc7, type: 3}
+  m_Name: RulePage_Stage1
+  m_EditorClassIdentifier: 
+  Chapter: 1
+  Title: "\u30B9\u30C6\u30FC\u30B81\u306E\u771F\u7406"
+  Description: "\u6BD2\u3068\u6B7B\u306E\u7D50\u3073\u3064\u304D"
+  Rules:
+  - {fileID: 11400000, guid: 404cb5b52f816c941bb34d1535f8ab18, type: 2}
+  - {fileID: 11400000, guid: 2bd27697e337a514bafd90ffda9a0aef, type: 2}
